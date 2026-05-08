@@ -1,26 +1,16 @@
+// lib/shared/widgets/dg_badge.dart
 import 'package:flutter/material.dart';
 import '../../core/tokens/app_colors.dart';
 import '../../core/tokens/app_radius.dart';
 import '../../core/tokens/app_typography.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DgBadge — semantic status chips
-//
-// Usage:
-//   DgBadge.success(label: 'Đã hoàn thành')
-//   DgBadge.error(label: 'Lỗi')
-//   DgBadge.warning(label: 'Chờ xử lý')
-//   DgBadge.info(label: 'Đang xử lý')
-//   DgBadge.neutral(label: 'Nháp')
-//   DgBadge(label: 'Custom', color: Color(0xFF...))
-// ─────────────────────────────────────────────────────────────────────────────
 
 class DgBadge extends StatelessWidget {
   final String label;
   final Color color;
   final Color? bgColor;
   final IconData? icon;
-  final bool dot; // show colored dot instead of icon
+  final bool dot;
+  final double? width; // Thêm thuộc tính width
 
   const DgBadge({
     super.key,
@@ -29,39 +19,43 @@ class DgBadge extends StatelessWidget {
     this.bgColor,
     this.icon,
     this.dot = true,
+    this.width, // Thêm vào constructor
   });
 
-  factory DgBadge.success({required String label, bool dot = true}) => DgBadge(
-        label: label, color: AppColors.success,
-        bgColor: AppColors.successSoft, dot: dot,
-      );
+  factory DgBadge.success({required String label, bool dot = true, double? width}) => DgBadge(
+    label: label, color: AppColors.success,
+    bgColor: AppColors.successSoft, dot: dot, width: width,
+  );
 
-  factory DgBadge.warning({required String label, bool dot = true}) => DgBadge(
-        label: label, color: AppColors.warning,
-        bgColor: AppColors.warningSoft, dot: dot,
-      );
+  factory DgBadge.warning({required String label, bool dot = true, double? width}) => DgBadge(
+    label: label, color: AppColors.warning,
+    bgColor: AppColors.warningSoft, dot: dot, width: width,
+  );
 
-  factory DgBadge.error({required String label, bool dot = true}) => DgBadge(
-        label: label, color: AppColors.error,
-        bgColor: AppColors.errorSoft, dot: dot,
-      );
+  factory DgBadge.error({required String label, bool dot = true, double? width}) => DgBadge(
+    label: label, color: AppColors.error,
+    bgColor: AppColors.errorSoft, dot: dot, width: width,
+  );
 
-  factory DgBadge.info({required String label, bool dot = true}) => DgBadge(
-        label: label, color: AppColors.info,
-        bgColor: AppColors.infoSoft, dot: dot,
-      );
+  factory DgBadge.info({required String label, bool dot = true, double? width}) => DgBadge(
+    label: label, color: AppColors.info,
+    bgColor: AppColors.infoSoft, dot: dot, width: width,
+  );
 
-  factory DgBadge.neutral({required String label}) => DgBadge(
-        label: label,
-        color: AppColors.fgDisabled,
-        bgColor: const Color(0xFFF3F4F6),
-        dot: false,
-      );
+  factory DgBadge.neutral({required String label, double? width}) => DgBadge(
+    label: label,
+    color: AppColors.fgDisabled,
+    bgColor: const Color(0xFFF3F4F6),
+    dot: false,
+    width: width,
+  );
 
   @override
   Widget build(BuildContext context) {
     final bg = bgColor ?? color.withOpacity(0.1);
     return Container(
+      width: width, // Áp dụng chiều rộng cố định nếu có
+      alignment: width != null ? Alignment.center : null, // Căn giữa nội dung
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
@@ -69,6 +63,7 @@ class DgBadge extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center, // Đảm bảo căn giữa cho Row
         children: [
           if (dot) ...[
             Container(

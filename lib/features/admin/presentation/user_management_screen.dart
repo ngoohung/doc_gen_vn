@@ -1,5 +1,4 @@
 // lib/features/admin/presentation/user_management_screen.dart
-
 import 'package:flutter/material.dart';
 
 import '../../../core/tokens/app_colors.dart';
@@ -11,12 +10,12 @@ import '../../../shared/widgets/dg_card.dart';
 import '../../../shared/widgets/dg_input.dart';
 import '../../../shared/widgets/dg_misc.dart';
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-// TODO: thay bằng API GET /admin/users?page=1&limit=20
+// ── Mock data ──
 enum _UserStatus { active, locked }
 
 class _UserRow {
-  final String id, name, email, role;
+  final String id, name, email;
+  String role; // Bỏ final để có thể update vai trò
   final int docsCount, tokens;
   final DateTime joinedAt;
   _UserStatus status;
@@ -29,18 +28,12 @@ class _UserRow {
 }
 
 List<_UserRow> _mockUsers = [
-  _UserRow(id: '1', name: 'Nguyễn Văn A', email: 'nva@example.com', role: 'user',
-      docsCount: 24, tokens: 12480, joinedAt: DateTime(2024, 3, 15), status: _UserStatus.active),
-  _UserRow(id: '2', name: 'Trần Thị B', email: 'ttb@example.com', role: 'user',
-      docsCount: 56, tokens: 28900, joinedAt: DateTime(2024, 2, 8), status: _UserStatus.active),
-  _UserRow(id: '3', name: 'Lê Minh C', email: 'lmc@example.com', role: 'user',
-      docsCount: 8, tokens: 3200, joinedAt: DateTime(2024, 5, 1), status: _UserStatus.locked),
-  _UserRow(id: '4', name: 'Phạm Quốc D', email: 'pqd@example.com', role: 'admin',
-      docsCount: 142, tokens: 78000, joinedAt: DateTime(2023, 11, 20), status: _UserStatus.active),
-  _UserRow(id: '5', name: 'Hoàng Thị E', email: 'hte@example.com', role: 'user',
-      docsCount: 31, tokens: 15600, joinedAt: DateTime(2024, 4, 12), status: _UserStatus.active),
-  _UserRow(id: '6', name: 'Vũ Thanh F', email: 'vtf@example.com', role: 'user',
-      docsCount: 5, tokens: 1800, joinedAt: DateTime(2024, 6, 3), status: _UserStatus.locked),
+  _UserRow(id: '1', name: 'Nguyễn Văn A', email: 'nva@example.com', role: 'user', docsCount: 24, tokens: 12480, joinedAt: DateTime(2024, 3, 15), status: _UserStatus.active),
+  _UserRow(id: '2', name: 'Trần Thị B', email: 'ttb@example.com', role: 'user', docsCount: 56, tokens: 28900, joinedAt: DateTime(2024, 2, 8), status: _UserStatus.active),
+  _UserRow(id: '3', name: 'Lê Minh C', email: 'lmc@example.com', role: 'user', docsCount: 8, tokens: 3200, joinedAt: DateTime(2024, 5, 1), status: _UserStatus.locked),
+  _UserRow(id: '4', name: 'Phạm Quốc D', email: 'pqd@example.com', role: 'admin', docsCount: 142, tokens: 78000, joinedAt: DateTime(2023, 11, 20), status: _UserStatus.active),
+  _UserRow(id: '5', name: 'Hoàng Thị E', email: 'hte@example.com', role: 'user', docsCount: 31, tokens: 15600, joinedAt: DateTime(2024, 4, 12), status: _UserStatus.active),
+  _UserRow(id: '6', name: 'Vũ Thanh F', email: 'vtf@example.com', role: 'user', docsCount: 5, tokens: 1800, joinedAt: DateTime(2024, 6, 3), status: _UserStatus.locked),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,7 +90,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       destructive: isLocking,
     );
     if (!confirmed) return;
-    // TODO: gọi API PATCH /admin/users/:id  { status: 'locked' | 'active' }
     setState(() {
       user.status = isLocking ? _UserStatus.locked : _UserStatus.active;
     });
@@ -107,6 +99,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         isLocking ? 'Đã khóa tài khoản ${user.name}' : 'Đã mở khóa ${user.name}',
         type: isLocking ? ToastType.warning : ToastType.success,
       );
+    }
+  }
+
+  Future<void> _toggleRole(_UserRow user) async {
+    final isPromoting = user.role == 'user';
+    final confirmed = await DgConfirmDialog.show(
+      context,
+      title: 'Thay đổi vai trò',
+      message: 'Bạn có chắc muốn chuyển "${user.name}" thành ${isPromoting ? "Quản trị viên" : "Người dùng thường"}?',
+      confirmLabel: 'Xác nhận',
+    );
+    if (!confirmed) return;
+
+    setState(() {
+      user.role = isPromoting ? 'admin' : 'user';
+    });
+    if (mounted) {
+      DgToast.show(context, 'Đã cập nhật vai trò cho ${user.name}', type: ToastType.success);
     }
   }
 
@@ -123,7 +133,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -142,76 +151,42 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           const SizedBox(height: AppSpacing.s5),
 
-          // ── Filters ─────────────────────────────────────────────────
           Wrap(
             spacing: AppSpacing.s3,
             runSpacing: AppSpacing.s3,
             children: [
               SizedBox(
                 width: isWide ? 280 : double.infinity,
-                child: DgInput.search(
-                  hint: 'Tìm theo tên, email...',
-                  controller: _searchCtrl,
-                ),
+                child: DgInput.search(hint: 'Tìm theo tên, email...', controller: _searchCtrl),
               ),
-              _FilterChip(
-                label: 'Tất cả', selected: _roleFilter == 'all',
-                onTap: () { _roleFilter = 'all'; _filter(); },
-              ),
-              _FilterChip(
-                label: 'Người dùng', selected: _roleFilter == 'user',
-                onTap: () { _roleFilter = 'user'; _filter(); },
-              ),
-              _FilterChip(
-                label: 'Quản trị viên', selected: _roleFilter == 'admin',
-                onTap: () { _roleFilter = 'admin'; _filter(); },
-              ),
-              _FilterChip(
-                label: 'Đang hoạt động', selected: _statusFilter == 'active',
-                onTap: () {
-                  _statusFilter = _statusFilter == 'active' ? 'all' : 'active';
-                  _filter();
-                },
-                color: AppColors.success,
-              ),
-              _FilterChip(
-                label: 'Bị khóa', selected: _statusFilter == 'locked',
-                onTap: () {
-                  _statusFilter = _statusFilter == 'locked' ? 'all' : 'locked';
-                  _filter();
-                },
-                color: AppColors.error,
-              ),
+              _FilterChip(label: 'Tất cả', selected: _roleFilter == 'all', onTap: () { _roleFilter = 'all'; _filter(); }),
+              _FilterChip(label: 'Người dùng', selected: _roleFilter == 'user', onTap: () { _roleFilter = 'user'; _filter(); }),
+              _FilterChip(label: 'Quản trị viên', selected: _roleFilter == 'admin', onTap: () { _roleFilter = 'admin'; _filter(); }),
+              _FilterChip(label: 'Đang hoạt động', selected: _statusFilter == 'active', onTap: () { _statusFilter = _statusFilter == 'active' ? 'all' : 'active'; _filter(); }, color: AppColors.success),
+              _FilterChip(label: 'Bị khóa', selected: _statusFilter == 'locked', onTap: () { _statusFilter = _statusFilter == 'locked' ? 'all' : 'locked'; _filter(); }, color: AppColors.error),
             ],
           ),
           const SizedBox(height: AppSpacing.s4),
 
-          // ── Table ────────────────────────────────────────────────────
           Expanded(
             child: DgCard(
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  // Table header
                   if (isWide) _TableHeader(isDark: isDark, fg: fg, border: border),
-
-                  // Rows
                   Expanded(
                     child: _filtered.isEmpty
-                        ? DgEmptyState(
-                      icon: Icons.people_outline,
-                      message: 'Không tìm thấy người dùng',
-                    )
+                        ? DgEmptyState(icon: Icons.people_outline, message: 'Không tìm thấy người dùng')
                         : ListView.separated(
                       itemCount: _filtered.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: border),
+                      separatorBuilder: (_, __) => Divider(height: 1, color: border),
                       itemBuilder: (_, i) => _UserTableRow(
                         user: _filtered[i],
                         isWide: isWide,
                         isDark: isDark,
                         fg: fg, muted: muted, border: border,
                         onToggleLock: () => _toggleLock(_filtered[i]),
+                        onToggleRole: () => _toggleRole(_filtered[i]), // Pass callback
                       ),
                     ),
                   ),
@@ -238,9 +213,7 @@ class _TableHeader extends StatelessWidget {
     final bg     = isDark ? AppColors.bgDark : const Color(0xFFF9FAFB);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s4, vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: 10),
       decoration: BoxDecoration(
         color: bg,
         border: Border(bottom: BorderSide(color: border)),
@@ -249,15 +222,16 @@ class _TableHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(flex: 3, child: Text('Người dùng', style: AppTypography.label.copyWith(color: subtle))),
-          const SizedBox(width: AppSpacing.s3), // Thêm khoảng cách giữa các cột
+          const SizedBox(width: AppSpacing.s3),
           Expanded(flex: 2, child: Text('Email', style: AppTypography.label.copyWith(color: subtle))),
           const SizedBox(width: AppSpacing.s3),
           SizedBox(width: 80, child: Text('Tài liệu', style: AppTypography.label.copyWith(color: subtle))),
           const SizedBox(width: AppSpacing.s3),
-          SizedBox(width: 100, child: Text('Vai trò', style: AppTypography.label.copyWith(color: subtle))),
+          SizedBox(width: 140, child: Text('Vai trò', style: AppTypography.label.copyWith(color: subtle))),
           const SizedBox(width: AppSpacing.s3),
-          SizedBox(width: 120, child: Text('Trạng thái', style: AppTypography.label.copyWith(color: subtle))),
-          const SizedBox(width: 80), // Cột cho nút Khóa
+          SizedBox(width: 100, child: Text('Trạng thái', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: AppSpacing.s3),
+          const SizedBox(width: 100), // Cột hành động (Khoá)
         ],
       ),
     );
@@ -270,11 +244,12 @@ class _UserTableRow extends StatefulWidget {
   final bool isWide, isDark;
   final Color fg, muted, border;
   final VoidCallback onToggleLock;
+  final VoidCallback onToggleRole;
 
   const _UserTableRow({
     required this.user, required this.isWide, required this.isDark,
     required this.fg, required this.muted, required this.border,
-    required this.onToggleLock,
+    required this.onToggleLock, required this.onToggleRole,
   });
 
   @override
@@ -291,7 +266,6 @@ class _UserTableRowState extends State<_UserTableRow> {
     final locked = user.status == _UserStatus.locked;
 
     if (!widget.isWide) {
-      // Mobile: card-style row
       return _MobileUserRow(
         user: user, isDark: widget.isDark,
         fg: widget.fg, muted: widget.muted,
@@ -305,9 +279,7 @@ class _UserTableRowState extends State<_UserTableRow> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
         color: _hovered ? hover : Colors.transparent,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s4, vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: 12),
         child: Row(
           children: [
             Expanded(
@@ -332,32 +304,41 @@ class _UserTableRowState extends State<_UserTableRow> {
             const SizedBox(width: AppSpacing.s3),
             Expanded(
               flex: 2,
-              child: Text(
-                user.email,
-                style: AppTypography.caption.copyWith(color: widget.muted),
-                overflow: TextOverflow.ellipsis,
+              child: Text(user.email, style: AppTypography.caption.copyWith(color: widget.muted), overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: AppSpacing.s3),
+            SizedBox(
+              width: 80,
+              child: Text('${user.docsCount}', style: AppTypography.code.copyWith(color: widget.fg, fontSize: 13)),
+            ),
+            const SizedBox(width: AppSpacing.s3),
+
+            // Cố định chiều rộng Badge là 72px để đảm bảo luôn bằng nhau
+            SizedBox(
+              width: 140,
+              child: Row(
+                children: [
+                  user.role == 'admin'
+                      ? DgBadge.info(label: 'Admin', width: 72)
+                      : DgBadge.neutral(label: 'User', width: 72),
+                  IconButton(
+                    icon: const Icon(Icons.swap_horiz, size: 16),
+                    onPressed: widget.onToggleRole,
+                    tooltip: 'Đổi vai trò',
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: AppSpacing.s3),
             SizedBox(
-              width: 80,
-              child: Text('${user.docsCount}', style: AppTypography.code.copyWith(color: widget.fg)),
-            ),
-            const SizedBox(width: AppSpacing.s3),
-            SizedBox(
               width: 100,
-              child: user.role == 'admin' ? DgBadge.info(label: 'Admin') : DgBadge.neutral(label: 'User'),
-            ),
-            const SizedBox(width: AppSpacing.s3),
-            SizedBox(
-              width: 120,
               child: locked ? DgBadge.error(label: 'Bị khóa') : DgBadge.success(label: 'Hoạt động'),
             ),
             const SizedBox(width: AppSpacing.s3),
             SizedBox(
-              width: 80,
+              width: 100,
               child: DgButton.ghost(
-                label: locked ? 'Mở' : 'Khóa',
+                label: locked ? 'Mở khóa' : 'Khóa',
                 onPressed: widget.onToggleLock,
               ),
             ),
@@ -384,9 +365,7 @@ class _MobileUserRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final locked = user.status == _UserStatus.locked;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s4, vertical: AppSpacing.s3,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: AppSpacing.s3),
       child: Row(
         children: [
           _Avatar(name: user.name, locked: locked),
@@ -400,9 +379,7 @@ class _MobileUserRow extends StatelessWidget {
               ],
             ),
           ),
-          locked
-              ? DgBadge.error(label: 'Khóa')
-              : DgBadge.success(label: 'OK'),
+          locked ? DgBadge.error(label: 'Khóa') : DgBadge.success(label: 'OK'),
           const SizedBox(width: AppSpacing.s2),
           DgButton.ghost(
             label: locked ? 'Mở' : 'Khóa',
@@ -417,24 +394,17 @@ class _MobileUserRow extends StatelessWidget {
 class _Avatar extends StatelessWidget {
   final String name;
   final bool locked;
-
   const _Avatar({required this.name, required this.locked});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 32, height: 32,
-      decoration: BoxDecoration(
-        color: locked ? AppColors.fgDisabled : AppColors.primary,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: locked ? AppColors.fgDisabled : AppColors.primary, shape: BoxShape.circle),
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: const TextStyle(
-            fontFamily: 'Inter', fontSize: 13,
-            fontWeight: FontWeight.w600, color: Colors.white,
-          ),
+          style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
         ),
       ),
     );
@@ -447,10 +417,7 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
 
-  const _FilterChip({
-    required this.label, required this.selected,
-    required this.onTap, this.color,
-  });
+  const _FilterChip({required this.label, required this.selected, required this.onTap, this.color});
 
   @override
   Widget build(BuildContext context) {

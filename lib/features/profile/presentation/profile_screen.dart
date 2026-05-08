@@ -1,5 +1,6 @@
 // lib/features/profile/presentation/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
@@ -57,6 +58,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem có đang ở route admin không
+    final isAdminView = GoRouterState.of(context).matchedLocation.startsWith('/admin');
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
@@ -226,21 +230,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.s4),
 
-            // ── Usage stats card ──────────────────────────────────────
-            DgCard(
-              padding: const EdgeInsets.all(AppSpacing.s6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Thống kê sử dụng', style: AppTypography.h4.copyWith(color: fg)),
-                  const SizedBox(height: AppSpacing.s4),
-                  _StatRow(label: 'Tài liệu đã tạo', value: '24', muted: muted, fg: fg),
-                  Divider(height: AppSpacing.s4, color: border),
-                  _StatRow(label: 'Tệp đã xử lý', value: '38', muted: muted, fg: fg),
-                ],
+            // ── Usage stats card (Chỉ hiện nếu không phải Admin view) ──
+            if (!isAdminView) ...[
+              DgCard(
+                padding: const EdgeInsets.all(AppSpacing.s6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Thống kê sử dụng', style: AppTypography.h4.copyWith(color: fg)),
+                    const SizedBox(height: AppSpacing.s4),
+                    _StatRow(label: 'Tài liệu đã tạo', value: '24', muted: muted, fg: fg),
+                    Divider(height: AppSpacing.s4, color: border),
+                    _StatRow(label: 'Tệp đã xử lý', value: '38', muted: muted, fg: fg),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s4),
+            ],
 
             // ── Danger zone ───────────────────────────────────────────
             DgCard(

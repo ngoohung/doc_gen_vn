@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// dg_skeleton.dart  →  lib/shared/widgets/dg_skeleton.dart
+// dg_skeleton.dart  →  lib/shared/widgets/dg_misc.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // (this file is a barrel – split into individual files if preferred)
 
@@ -170,13 +170,13 @@ class DgConfirmDialog extends StatelessWidget {
 
   /// Show and return true if confirmed
   static Future<bool> show(
-    BuildContext context, {
-    required String title,
-    required String message,
-    String confirmLabel = 'Xác nhận',
-    String cancelLabel  = 'Hủy',
-    bool destructive = false,
-  }) async {
+      BuildContext context, {
+        required String title,
+        required String message,
+        String confirmLabel = 'Xác nhận',
+        String cancelLabel  = 'Hủy',
+        bool destructive = false,
+      }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (_) => DgConfirmDialog(
@@ -196,39 +196,43 @@ class DgConfirmDialog extends StatelessWidget {
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
 
     return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.s2),
-            Text(
-              message,
-              style: AppTypography.body.copyWith(color: muted),
-            ),
-            const SizedBox(height: AppSpacing.s6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                DgButton.ghost(
-                  label: cancelLabel,
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-                const SizedBox(width: AppSpacing.s2),
-                destructive
-                    ? DgButton.destructive(
-                        label: confirmLabel,
-                        onPressed: () => Navigator.of(context).pop(true),
-                      )
-                    : DgButton.primary(
-                        label: confirmLabel,
-                        onPressed: () => Navigator.of(context).pop(true),
-                      ),
-              ],
-            ),
-          ],
+      // Thêm giới hạn chiều rộng cho Dialog
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.s2),
+              Text(
+                message,
+                style: AppTypography.body.copyWith(color: muted),
+              ),
+              const SizedBox(height: AppSpacing.s6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  DgButton.ghost(
+                    label: cancelLabel,
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  destructive
+                      ? DgButton.destructive(
+                    label: confirmLabel,
+                    onPressed: () => Navigator.of(context).pop(true),
+                  )
+                      : DgButton.primary(
+                    label: confirmLabel,
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -244,11 +248,11 @@ class DgToast {
   DgToast._();
 
   static void show(
-    BuildContext context,
-    String message, {
-    ToastType type = ToastType.info,
-    Duration duration = const Duration(seconds: 3),
-  }) {
+      BuildContext context,
+      String message, {
+        ToastType type = ToastType.info,
+        Duration duration = const Duration(seconds: 3),
+      }) {
     final (icon, color) = switch (type) {
       ToastType.success => (Icons.check_circle_outline, AppColors.success),
       ToastType.error   => (Icons.error_outline,         AppColors.error),

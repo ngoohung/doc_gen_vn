@@ -6,6 +6,7 @@ import '../../core/tokens/app_colors.dart';
 import '../../core/tokens/app_typography.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive.dart'; // Đã thêm import responsive để check mobile
 
 const _memberTitles = ['Sinh tài liệu', 'Lịch sử', 'Cài đặt'];
 const _adminTitles  = ['Dashboard', 'Người dùng', 'Cài đặt'];
@@ -31,6 +32,7 @@ class _TopBarState extends ConsumerState<TopBar> {
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final isDark     = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final isMobile   = Responsive.isMobile(context); // Kiểm tra màn hình điện thoại
 
     final bg     = AppColors.card(brightness);
     final border = AppColors.border(brightness);
@@ -43,44 +45,95 @@ class _TopBarState extends ConsumerState<TopBar> {
     return AnimatedContainer(
       duration: AppTheme.themeTransitionDuration,
       curve: AppTheme.themeCurve,
-      height: 56,
       color: bg,
-      child: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  if (widget.showMenuButton)
-                    IconButton(
-                      icon: const Icon(Icons.menu, size: 20),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  _Breadcrumb(title: title, fg: fg, subtle: subtle),
-
-                  // Dùng Spacer duy nhất ở đây sẽ đẩy cụm Avatar và Theme sáng mép phải tuyệt đối
-                  const Spacer(),
-
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 56,
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
                     children: [
-                      _TopBarIconBtn(
-                        icon: isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
-                        onTap: () => ref.read(themeModeProvider.notifier).toggle(),
-                        brightness: brightness,
+                      // NẾU LÀ MOBILE -> HIỆN LOGO, ẨN BREADCRUMB
+                      if (isMobile)
+                        const _AppLogo()
+                      else ...[
+                        // NẾU LÀ DESKTOP/TABLET -> HIỆN BREADCRUMB
+                        if (widget.showMenuButton)
+                          IconButton(
+                            icon: const Icon(Icons.menu, size: 20),
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                          ),
+                        _Breadcrumb(title: title, fg: fg, subtle: subtle),
+                      ],
+
+                      const Spacer(),
+
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _TopBarIconBtn(
+                            icon: isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
+                            onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+                            brightness: brightness,
+                          ),
+                          const SizedBox(width: 8),
+                          const _TopBarAvatar(),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      const _TopBarAvatar(),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+              Divider(height: 1, color: border),
+            ],
           ),
-          Divider(height: 1, color: border),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+// Thiết kế chuẩn cụm Logo giống y hệt Sidebar
+class _AppLogo extends StatelessWidget {
+  const _AppLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28, height: 28,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: const Icon(Icons.code, color: Colors.white, size: 16),
+        ),
+        const SizedBox(width: 10),
+        RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF111827),
+            ),
+            children: const [
+              TextSpan(text: 'DocGen'),
+              TextSpan(
+                text: ' VN',
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

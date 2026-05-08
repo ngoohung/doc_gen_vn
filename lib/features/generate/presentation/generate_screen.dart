@@ -30,7 +30,6 @@ class _GenerateScreenState extends State<GenerateScreen>
   bool _editMode    = false;
   final _editCtrl   = TextEditingController();
 
-  // Sửa YC 5: Chỉ bao gồm 6 ngôn ngữ yêu cầu
   final _langs = const [
     ('python', 'Python'),
     ('javascript', 'JavaScript'),
@@ -126,7 +125,6 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
 
     return Column(
       children: [
-        // Sửa YC 4: Dùng AnimatedContainer cho chuyển nền Theme mượt mà
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           color: isDark ? AppColors.cardDark : AppColors.cardLight,
@@ -170,7 +168,6 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
     final codeBg = isDark ? AppColors.bgDark      : AppColors.sunkenLight;
 
-    // Sửa YC 4: Dùng AnimatedContainer
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
@@ -204,25 +201,12 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
                   isDark: isDark,
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: border),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedLang,
-                      isDense: true,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 14),
-                      style: AppTypography.caption.copyWith(color: fg),
-                      onChanged: (v) => setState(() => _selectedLang = v ?? 'python'),
-                      items: _langs.map((l) => DropdownMenuItem(
-                        value: l.$1,
-                        child: Text(l.$2),
-                      )).toList(),
-                    ),
-                  ),
+                // Sử dụng component chọn ngôn ngữ mới mượt mà hơn
+                _LanguageSelector(
+                  selectedLang: _selectedLang,
+                  langs: _langs,
+                  onChanged: (v) => setState(() => _selectedLang = v),
+                  isDark: isDark,
                 ),
               ],
             ),
@@ -286,12 +270,12 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
   }
 
   Widget _OutputPanel() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg     = isDark ? AppColors.cardDark   : AppColors.cardLight;
-    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
-    final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final bg       = isDark ? AppColors.cardDark   : AppColors.cardLight;
+    final border   = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final fg       = isDark ? AppColors.fgDark     : AppColors.fgLight;
+    final isMobile = Responsive.isMobile(context);
 
-    // Sửa YC 4: Dùng AnimatedContainer
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
@@ -311,47 +295,102 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
             ),
             child: Row(
               children: [
-                Text(
-                  'Tài liệu',
-                  style: AppTypography.bodyMedium.copyWith(color: fg),
-                ),
-                const Spacer(),
-                if (_hasOutput) ...[
-                  _ActionBtn(
-                    icon: _editMode
-                        ? Icons.visibility_outlined
-                        : Icons.edit_outlined,
-                    label: _editMode ? 'Xem' : 'Chỉnh sửa',
-                    onTap: () {
-                      setState(() {
-                        _editMode = !_editMode;
-                        if (_editMode) _editCtrl.text = _output;
-                        else _output = _editCtrl.text;
-                      });
-                    },
-                    isDark: isDark,
+                if (!isMobile) ...[
+                  Text(
+                    'Tài liệu',
+                    style: AppTypography.bodyMedium.copyWith(color: fg),
                   ),
-                  const SizedBox(width: 4),
-                  _ActionBtn(
-                    icon: Icons.copy_outlined,
-                    label: 'Sao chép',
-                    onTap: _copyOutput,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 4),
-                  _ActionBtn(
-                    icon: Icons.bookmark_border,
-                    label: 'Lưu',
-                    onTap: _saveHistory,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 4),
-                  _ExportMenu(
-                    onExportMd:  _exportMarkdown,
-                    onExportPdf: _exportPdf,
-                    isDark: isDark,
-                  ),
+                  const SizedBox(width: AppSpacing.s4),
                 ],
+
+                if (_hasOutput)
+                  Expanded(
+                    child: isMobile
+                    // Ép vừa khung hình, nếu tràn sẽ tự động thu nhỏ một chút để fit màn hình
+                        ? FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min, // Giữ các nút sát nhau để căn giữa
+                        children: [
+                          _ActionBtn(
+                            icon: _editMode ? Icons.visibility_outlined : Icons.edit_outlined,
+                            label: _editMode ? 'Xem' : 'Chỉnh sửa',
+                            onTap: () {
+                              setState(() {
+                                _editMode = !_editMode;
+                                if (_editMode) _editCtrl.text = _output;
+                                else _output = _editCtrl.text;
+                              });
+                            },
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ActionBtn(
+                            icon: Icons.copy_outlined,
+                            label: 'Sao chép',
+                            onTap: _copyOutput,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ActionBtn(
+                            icon: Icons.bookmark_border,
+                            label: 'Lưu',
+                            onTap: _saveHistory,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ExportMenu(
+                            onExportMd:  _exportMarkdown,
+                            onExportPdf: _exportPdf,
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    )
+                        : Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ActionBtn(
+                            icon: _editMode ? Icons.visibility_outlined : Icons.edit_outlined,
+                            label: _editMode ? 'Xem' : 'Chỉnh sửa',
+                            onTap: () {
+                              setState(() {
+                                _editMode = !_editMode;
+                                if (_editMode) _editCtrl.text = _output;
+                                else _output = _editCtrl.text;
+                              });
+                            },
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ActionBtn(
+                            icon: Icons.copy_outlined,
+                            label: 'Sao chép',
+                            onTap: _copyOutput,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ActionBtn(
+                            icon: Icons.bookmark_border,
+                            label: 'Lưu',
+                            onTap: _saveHistory,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 4),
+                          _ExportMenu(
+                            onExportMd:  _exportMarkdown,
+                            onExportPdf: _exportPdf,
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
               ],
             ),
           ),
@@ -396,7 +435,7 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
                 ),
               ),
             )
-                : DgEmptyState(
+                : const DgEmptyState(
               icon: Icons.description_outlined,
               message: 'Tài liệu sẽ hiển thị ở đây',
               description: 'Nhập mã nguồn và nhấn "Sinh tài liệu" để bắt đầu.',
@@ -413,15 +452,15 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DgSkeleton(width: 200, height: 22),
+          const DgSkeleton(width: 200, height: 22),
           const SizedBox(height: AppSpacing.s5),
           DgSkeleton.text(lines: 4),
           const SizedBox(height: AppSpacing.s5),
-          DgSkeleton(width: 160, height: 18),
+          const DgSkeleton(width: 160, height: 18),
           const SizedBox(height: AppSpacing.s3),
           DgSkeleton.text(lines: 3),
           const SizedBox(height: AppSpacing.s5),
-          DgSkeleton(width: 180, height: 18),
+          const DgSkeleton(width: 180, height: 18),
           const SizedBox(height: AppSpacing.s3),
           DgSkeleton.text(lines: 5),
         ],
@@ -430,7 +469,120 @@ Lớp xử lý nghiệp vụ liên quan đến người dùng.
   }
 }
 
-// Các class phụ trợ như _SmallTab, _UploadZone, _ActionBtn, _ExportMenu được giữ nguyên logic
+// ─────────────────────────────────────────────────────────────────────────────
+// Component Tùy chỉnh ngôn ngữ mới
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Component Tùy chỉnh ngôn ngữ
+// ─────────────────────────────────────────────────────────────────────────────
+class _LanguageSelector extends StatefulWidget {
+  final String selectedLang;
+  final List<(String, String)> langs;
+  final ValueChanged<String> onChanged;
+  final bool isDark;
+
+  const _LanguageSelector({
+    required this.selectedLang,
+    required this.langs,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  State<_LanguageSelector> createState() => _LanguageSelectorState();
+}
+
+class _LanguageSelectorState extends State<_LanguageSelector> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = widget.isDark ? AppColors.borderDark : AppColors.borderLight;
+    final fg     = widget.isDark ? AppColors.fgDark : AppColors.fgLight;
+    final hover  = widget.isDark ? AppColors.hoverDark : AppColors.hoverLight;
+    final subtle = widget.isDark ? AppColors.fgSubtleDark : AppColors.fgSubtleLight;
+
+    // Tìm nhãn hiển thị của ngôn ngữ hiện tại
+    final selectedLabel = widget.langs
+        .firstWhere((l) => l.$1 == widget.selectedLang, orElse: () => widget.langs.first).$2;
+
+    return PopupMenuButton<String>(
+      initialValue: widget.selectedLang,
+      onSelected: widget.onChanged,
+      tooltip: 'Chọn ngôn ngữ',
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: border),
+      ),
+      elevation: 0,
+      color: widget.isDark ? AppColors.cardDark : AppColors.cardLight,
+      offset: const Offset(0, 42),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit:  (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _hovered ? hover : Colors.transparent,
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.code, size: 14, color: subtle),
+              const SizedBox(width: 6),
+              Text(
+                selectedLabel,
+                style: AppTypography.caption.copyWith(color: fg, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.keyboard_arrow_down, size: 14, color: subtle),
+            ],
+          ),
+        ),
+      ),
+      itemBuilder: (context) {
+        return widget.langs.map((lang) {
+          final isSelected = lang.$1 == widget.selectedLang;
+          return PopupMenuItem<String>(
+            value: lang.$1,
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    lang.$2,
+                    style: AppTypography.bodySmall.copyWith(
+                      // Sửa lỗi tương phản: Chỉ in đậm, giữ màu chữ cơ bản để dễ đọc
+                      color: fg,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    size: 16,
+                    // Làm sáng màu checkmark trên nền tối để đồng bộ với thẻ hover
+                    color: widget.isDark ? const Color(0xFF818CF8) : AppColors.primary,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Các Component Phụ Trợ
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _SmallTab extends StatelessWidget {
   final String label;
   final int index;
@@ -548,36 +700,83 @@ class _ExportMenu extends StatelessWidget {
   final VoidCallback onExportMd;
   final VoidCallback onExportPdf;
   final bool isDark;
-  const _ExportMenu({required this.onExportMd, required this.onExportPdf, required this.isDark});
+
+  const _ExportMenu({
+    required this.onExportMd,
+    required this.onExportPdf,
+    required this.isDark
+  });
+
   @override
   Widget build(BuildContext context) {
     final muted = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final hover = isDark ? AppColors.hoverDark : AppColors.hoverLight;
+
     return PopupMenuButton<String>(
       onSelected: (v) {
         if (v == 'md')  onExportMd();
         if (v == 'pdf') onExportPdf();
       },
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: border)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: border)
+      ),
       elevation: 0,
       color: isDark ? AppColors.cardDark : AppColors.cardLight,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.download_outlined, size: 14, color: muted),
-            const SizedBox(width: 4),
-            Text('Xuất file', style: AppTypography.caption.copyWith(color: muted)),
-            const SizedBox(width: 2),
-            Icon(Icons.keyboard_arrow_down, size: 12, color: muted),
-          ],
-        ),
+      // Thêm offset để đẩy menu xuống dưới viền nút
+      offset: const Offset(0, 36),
+      child: StatefulBuilder(
+          builder: (context, setState) {
+            bool isHovered = false;
+            return MouseRegion(
+              onEnter: (_) => setState(() => isHovered = true),
+              onExit:  (_) => setState(() => isHovered = false),
+              cursor: SystemMouseCursors.click,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isHovered ? hover : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.download_outlined, size: 14, color: muted),
+                    const SizedBox(width: 4),
+                    Text('Xuất file', style: AppTypography.caption.copyWith(color: muted)),
+                    const SizedBox(width: 2),
+                    Icon(Icons.keyboard_arrow_down, size: 12, color: muted),
+                  ],
+                ),
+              ),
+            );
+          }
       ),
       itemBuilder: (_) => [
-        PopupMenuItem(value: 'md', child: Row(children: [const Icon(Icons.description_outlined, size: 16), const SizedBox(width: 8), Text('Xuất Markdown', style: AppTypography.body)])),
-        PopupMenuItem(value: 'pdf', child: Row(children: [const Icon(Icons.picture_as_pdf_outlined, size: 16), const SizedBox(width: 8), Text('Xuất PDF', style: AppTypography.body)])),
+        PopupMenuItem(
+            value: 'md',
+            height: 40,
+            child: Row(
+                children: [
+                  const Icon(Icons.description_outlined, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Xuất Markdown', style: AppTypography.bodySmall)
+                ]
+            )
+        ),
+        PopupMenuItem(
+            value: 'pdf',
+            height: 40,
+            child: Row(
+                children: [
+                  const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Xuất PDF', style: AppTypography.bodySmall)
+                ]
+            )
+        ),
       ],
     );
   }
