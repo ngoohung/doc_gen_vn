@@ -140,7 +140,7 @@ class _DgInputState extends State<DgInput> {
             hintText: widget.hint,
             hintStyle: AppTypography.body.copyWith(color: muted),
             filled: true,
-            fillColor: bg,
+            fillColor: Colors.transparent,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             isDense: true,
             prefixIcon: widget.prefixIcon != null

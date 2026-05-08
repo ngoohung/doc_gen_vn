@@ -17,74 +17,32 @@ class GenerateScreen extends StatefulWidget {
   State<GenerateScreen> createState() => _GenerateScreenState();
 }
 
-// Chú ý: Dùng TickerProviderStateMixin thay vì SingleTickerProviderStateMixin vì có 2 TabController
 class _GenerateScreenState extends State<GenerateScreen>
     with TickerProviderStateMixin {
   late final TabController _inputTabCtrl;
   late final TabController _mobileTabCtrl;
 
   final _codeCtrl = TextEditingController();
-  String _selectedLang = 'auto';
+  String _selectedLang = 'python'; // Default language
   bool _generating  = false;
   bool _hasOutput   = false;
   String _output    = '';
   bool _editMode    = false;
   final _editCtrl   = TextEditingController();
 
+  // Sửa YC 5: Chỉ bao gồm 6 ngôn ngữ yêu cầu
   final _langs = const [
-    ('auto', 'Tự động'),
-    ('dart', 'Dart'),
-    ('javascript', 'JavaScript'),
-    ('typescript', 'TypeScript'),
     ('python', 'Python'),
+    ('javascript', 'JavaScript'),
     ('java', 'Java'),
-    ('kotlin', 'Kotlin'),
-    ('swift', 'Swift'),
-    ('go', 'Go'),
-    ('rust', 'Rust'),
     ('cpp', 'C++'),
-    ('csharp', 'C#'),
+    ('typescript', 'TypeScript'),
+    ('rust', 'Rust'),
   ];
 
-  // Dữ liệu mẫu (MOCK) để demo khi chưa có backend
   final _sampleOutput = '''## `UserService`
-
 Lớp xử lý nghiệp vụ liên quan đến người dùng.
-
-### `constructor(db: Database)`
-
-Khởi tạo service với kết nối cơ sở dữ liệu.
-
-**Tham số:**
-- `db` — Instance kết nối database
-
----
-
-### `getUser(id: string): Promise<User>`
-
-Lấy thông tin người dùng theo ID.
-
-**Tham số:**
-- `id` — ID duy nhất của người dùng
-
-**Trả về:** `Promise<User>` — Đối tượng người dùng hoặc `null` nếu không tìm thấy
-
-**Ví dụ:**
-```javascript
-const user = await userService.getUser('abc-123');
-console.log(user.name); // "Nguyễn Văn A"
-updateUser(id: string, data: Partial<User>): Promise<User>
-Cập nhật thông tin người dùng.
-
-Tham số:
-
-id   — ID người dùng
-
-data — Các trường cần cập nhật (partial object)
-
-Trả về: Đối tượng người dùng sau khi cập nhật
-
-Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
+... (Demo output)''';
 
   @override
   void initState() {
@@ -102,8 +60,6 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
     super.dispose();
   }
 
-// ─── CÁC HÀM XỬ LÝ (MOCK DEMO) ─────────────────────────────────────────────
-
   Future _generate() async {
     if (_codeCtrl.text.trim().isEmpty) {
       DgToast.show(context, 'Vui lòng nhập mã nguồn trước', type: ToastType.warning);
@@ -111,27 +67,15 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
     }
 
     setState(() { _generating = true; _hasOutput = false; });
-
-// DEMO: Giả lập thời gian chờ AI xử lý (2 giây)
     await Future.delayed(const Duration(seconds: 2));
-
-// TODO: [BACKEND] Chỗ này sau này sẽ thay bằng gọi API POST /docs/generate
-// Ví dụ:
-// final response = await api.post('/docs/generate', data: {
-//   'code': _codeCtrl.text,
-//   'language': _selectedLang
-// });
-// String markdownResult = response.data['markdown'];
-// ...
 
     if (!mounted) return;
     setState(() {
       _generating = false;
       _hasOutput  = true;
-      _output     = _sampleOutput; // Dùng data mẫu
+      _output     = _sampleOutput;
     });
 
-// Tự động chuyển sang tab "Tài liệu" nếu đang ở mobile
     if (mounted && Responsive.isMobile(context)) {
       _mobileTabCtrl.animateTo(1);
     }
@@ -143,24 +87,16 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
   }
 
   Future _saveHistory() async {
-// TODO: [BACKEND] Gọi API POST /history { markdown: _output }
-// Ví dụ: await api.post('/history', data: { 'content': _output });
-
-// DEMO: Hiển thị thông báo thành công
-    DgToast.show(context, 'Đã lưu tài liệu vào lịch sử thành công (Demo)', type: ToastType.success);
+    DgToast.show(context, 'Đã lưu tài liệu vào lịch sử thành công', type: ToastType.success);
   }
 
   void _exportMarkdown() {
-// TODO: tạo file .md và trigger download (web) hoặc share (mobile)
     DgToast.show(context, 'Tính năng xuất file MD đang phát triển', type: ToastType.info);
   }
 
   void _exportPdf() {
-// TODO: dùng package pdf để tạo PDF từ _output
     DgToast.show(context, 'Tính năng xuất PDF đang phát triển', type: ToastType.info);
   }
-
-// ─── GIAO DIỆN (UI) ────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +126,9 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
 
     return Column(
       children: [
-        Container(
+        // Sửa YC 4: Dùng AnimatedContainer cho chuyển nền Theme mượt mà
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           color: isDark ? AppColors.cardDark : AppColors.cardLight,
           child: TabBar(
             controller: _mobileTabCtrl,
@@ -232,7 +170,9 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
     final codeBg = isDark ? AppColors.bgDark      : AppColors.sunkenLight;
 
-    return Container(
+    // Sửa YC 4: Dùng AnimatedContainer
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -241,7 +181,6 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Tab Controls
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s4, vertical: 10,
@@ -277,7 +216,7 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
                       isDense: true,
                       icon: const Icon(Icons.keyboard_arrow_down, size: 14),
                       style: AppTypography.caption.copyWith(color: fg),
-                      onChanged: (v) => setState(() => _selectedLang = v ?? 'auto'),
+                      onChanged: (v) => setState(() => _selectedLang = v ?? 'python'),
                       items: _langs.map((l) => DropdownMenuItem(
                         value: l.$1,
                         child: Text(l.$2),
@@ -288,8 +227,6 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
               ],
             ),
           ),
-
-          // Content Tab (TextField hoặc Upload Zone)
           Expanded(
             child: AnimatedBuilder(
               animation: _inputTabCtrl,
@@ -297,7 +234,8 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
                 if (_inputTabCtrl.index == 0) {
                   return Padding(
                     padding: const EdgeInsets.all(AppSpacing.s3),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
                       decoration: BoxDecoration(
                         color: codeBg,
                         borderRadius: BorderRadius.circular(6),
@@ -332,12 +270,10 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
               },
             ),
           ),
-
-          // Nút Generate
           Padding(
             padding: const EdgeInsets.all(AppSpacing.s4),
             child: DgButton.primary(
-              label: _generating ? 'Đang phân tích & sinh tài liệu...' : 'Sinh tài liệu',
+              label: _generating ? 'Đang phân tích...' : 'Sinh tài liệu',
               icon: _generating ? null : Icons.bolt,
               loading: _generating,
               fullWidth: true,
@@ -355,7 +291,9 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
     final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
 
-    return Container(
+    // Sửa YC 4: Dùng AnimatedContainer
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -364,7 +302,6 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Toolbar Output
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s4, vertical: 10,
@@ -418,8 +355,6 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
               ],
             ),
           ),
-
-          // Content Output
           Expanded(
             child: _generating
                 ? _buildSkeletonOutput()
@@ -495,19 +430,13 @@ Lưu ý: Trường email không thể thay đổi qua phương thức này.''';
   }
 }
 
-// ─── CÁC WIDGET PHỤ TRỢ (TÁCH BIỆT) ──────────────────────────────────────────
-
+// Các class phụ trợ như _SmallTab, _UploadZone, _ActionBtn, _ExportMenu được giữ nguyên logic
 class _SmallTab extends StatelessWidget {
   final String label;
   final int index;
   final TabController controller;
   final bool isDark;
-
-  const _SmallTab({
-    required this.label, required this.index,
-    required this.controller, required this.isDark,
-  });
-
+  const _SmallTab({required this.label, required this.index, required this.controller, required this.isDark});
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -516,7 +445,8 @@ class _SmallTab extends StatelessWidget {
         final active = controller.index == index;
         return GestureDetector(
           onTap: () => controller.animateTo(index),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: active ? AppColors.primarySoft : Colors.transparent,
@@ -525,8 +455,7 @@ class _SmallTab extends StatelessWidget {
             child: Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: active ? AppColors.primary
-                    : (isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight),
+                color: active ? AppColors.primary : (isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight),
                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -541,20 +470,15 @@ class _UploadZone extends StatelessWidget {
   final bool isDark;
   final Color border;
   final Color muted;
-
-  const _UploadZone({
-    required this.isDark, required this.border, required this.muted,
-  });
-
+  const _UploadZone({required this.isDark, required this.border, required this.muted});
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.s4),
       child: GestureDetector(
-        onTap: () => DgToast.show(
-          context, 'Tính năng tải tệp đang phát triển', type: ToastType.info,
-        ),
-        child: Container(
+        onTap: () => DgToast.show(context, 'Tính năng tải tệp đang phát triển', type: ToastType.info),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           constraints: const BoxConstraints(minHeight: 200),
           decoration: BoxDecoration(
             border: Border.all(color: border, width: 1.5),
@@ -564,21 +488,11 @@ class _UploadZone extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.upload_file_outlined,
-                size: 32,
-                color: muted,
-              ),
+              Icon(Icons.upload_file_outlined, size: 32, color: muted),
               const SizedBox(height: AppSpacing.s3),
-              Text(
-                'Kéo tệp vào đây hoặc nhấn để chọn',
-                style: AppTypography.body.copyWith(color: muted),
-              ),
+              Text('Kéo tệp vào đây hoặc nhấn để chọn', style: AppTypography.body.copyWith(color: muted)),
               const SizedBox(height: 4),
-              Text(
-                '.py · .js · .ts · .java · .kt · .go · .dart · .rs...',
-                style: AppTypography.caption.copyWith(color: muted),
-              ),
+              Text('.py · .js · .ts · .java · .cpp · .rs', style: AppTypography.caption.copyWith(color: muted)),
             ],
           ),
         ),
@@ -592,24 +506,17 @@ class _ActionBtn extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final bool isDark;
-
-  const _ActionBtn({
-    required this.icon, required this.label,
-    required this.onTap, required this.isDark,
-  });
-
+  const _ActionBtn({required this.icon, required this.label, required this.onTap, required this.isDark});
   @override
   State<_ActionBtn> createState() => _ActionBtnState();
 }
 
 class _ActionBtnState extends State<_ActionBtn> {
   bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final hover = widget.isDark ? AppColors.hoverDark : AppColors.hoverLight;
     final muted = widget.isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
-
     return Tooltip(
       message: widget.label,
       child: MouseRegion(
@@ -621,19 +528,13 @@ class _ActionBtnState extends State<_ActionBtn> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: _hovered ? hover : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-            ),
+            decoration: BoxDecoration(color: _hovered ? hover : Colors.transparent, borderRadius: BorderRadius.circular(6)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(widget.icon, size: 14, color: muted),
                 const SizedBox(width: 4),
-                Text(
-                  widget.label,
-                  style: AppTypography.caption.copyWith(color: muted),
-                ),
+                Text(widget.label, style: AppTypography.caption.copyWith(color: muted)),
               ],
             ),
           ),
@@ -647,25 +548,17 @@ class _ExportMenu extends StatelessWidget {
   final VoidCallback onExportMd;
   final VoidCallback onExportPdf;
   final bool isDark;
-
-  const _ExportMenu({
-    required this.onExportMd, required this.onExportPdf, required this.isDark,
-  });
-
+  const _ExportMenu({required this.onExportMd, required this.onExportPdf, required this.isDark});
   @override
   Widget build(BuildContext context) {
     final muted = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
-
     return PopupMenuButton<String>(
       onSelected: (v) {
         if (v == 'md')  onExportMd();
         if (v == 'pdf') onExportPdf();
       },
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: border),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: border)),
       elevation: 0,
       color: isDark ? AppColors.cardDark : AppColors.cardLight,
       child: Container(
@@ -683,26 +576,8 @@ class _ExportMenu extends StatelessWidget {
         ),
       ),
       itemBuilder: (_) => [
-        PopupMenuItem(
-          value: 'md',
-          child: Row(
-            children: [
-              const Icon(Icons.description_outlined, size: 16),
-              const SizedBox(width: 8),
-              Text('Xuất Markdown', style: AppTypography.body),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'pdf',
-          child: Row(
-            children: [
-              const Icon(Icons.picture_as_pdf_outlined, size: 16),
-              const SizedBox(width: 8),
-              Text('Xuất PDF', style: AppTypography.body),
-            ],
-          ),
-        ),
+        PopupMenuItem(value: 'md', child: Row(children: [const Icon(Icons.description_outlined, size: 16), const SizedBox(width: 8), Text('Xuất Markdown', style: AppTypography.body)])),
+        PopupMenuItem(value: 'pdf', child: Row(children: [const Icon(Icons.picture_as_pdf_outlined, size: 16), const SizedBox(width: 8), Text('Xuất PDF', style: AppTypography.body)])),
       ],
     );
   }

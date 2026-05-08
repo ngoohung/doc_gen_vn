@@ -7,6 +7,10 @@ import '../tokens/app_typography.dart';
 class AppTheme {
   AppTheme._();
 
+  // Thêm 2 hằng số này để đồng bộ hiệu ứng chuyển theme mượt mà trên toàn app
+  static const themeTransitionDuration = Duration(milliseconds: 200);
+  static const themeCurve = Curves.easeInOut;
+
   static List<BoxShadow> get shadowSm => const [
     BoxShadow(color: AppColors.shadowBase, blurRadius: 2, offset: Offset(0, 1)),
   ];

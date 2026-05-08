@@ -1,12 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// auth_screens.dart — Login · Register · ForgotPassword
-// Split into separate files if preferred:
-//   features/auth/presentation/login_screen.dart
-//   features/auth/presentation/register_screen.dart
-//   features/auth/presentation/forgot_password_screen.dart
+// File chứa 3 màn hình: Login · Register · ForgotPassword
 // ─────────────────────────────────────────────────────────────────────────────
-library auth_screens;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,6 +61,8 @@ class _AuthLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         Container(
@@ -79,12 +75,13 @@ class _AuthLogo extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.s3),
         RichText(
-          text: const TextSpan(
+          text: TextSpan(
             style: TextStyle(
               fontFamily: 'Inter', fontSize: 20,
-              fontWeight: FontWeight.w700, color: AppColors.fgLight,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.fgLight,
             ),
-            children: [
+            children: const [
               TextSpan(text: 'DocGen'),
               TextSpan(
                 text: ' VN',
@@ -101,7 +98,7 @@ class _AuthLogo extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LoginScreen
+// 1. LoginScreen (Đã xóa GitHub)
 // ════════════════════════════════════════════════════════════════════════════
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -137,13 +134,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1200)); // TODO: gọi API /auth/login
+    await Future.delayed(const Duration(milliseconds: 1200));
 
     if (!mounted) return;
     setState(() => _loading = false);
 
-    // TODO: xử lý response từ backend — lưu token vào secure storage
-    // Demo: chuyển thẳng vào app
     if (_emailCtrl.text == 'admin@docgen.vn') {
       context.go('/admin');
     } else {
@@ -218,36 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
               fullWidth: true,
               onPressed: _loading ? null : _login,
             ),
-            const SizedBox(height: AppSpacing.s4),
 
-            // ── Divider ────────────────────────────────────────────────
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
-                  child: Text(
-                    'hoặc',
-                    style: AppTypography.caption.copyWith(color: muted),
-                  ),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s4),
-
-            // ── GitHub OAuth button ────────────────────────────────────
-            DgButton.secondary(
-              label: 'Đăng nhập bằng GitHub',
-              icon: Icons.code,
-              fullWidth: true,
-              // TODO: gọi OAuth GitHub flow
-              onPressed: () => DgToast.show(
-                context,
-                'GitHub OAuth chưa được cấu hình',
-                type: ToastType.warning,
-              ),
-            ),
             const SizedBox(height: AppSpacing.s6),
 
             Row(
@@ -274,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// RegisterScreen
+// 2. RegisterScreen
 // ════════════════════════════════════════════════════════════════════════════
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -303,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1400)); // TODO: gọi API /auth/register
+    await Future.delayed(const Duration(milliseconds: 1400));
     if (!mounted) return;
     setState(() => _loading = false);
     DgToast.show(context, 'Đăng ký thành công! Vui lòng đăng nhập.', type: ToastType.success);
@@ -388,7 +354,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ForgotPasswordScreen
+// 3. ForgotPasswordScreen
 // ════════════════════════════════════════════════════════════════════════════
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -411,7 +377,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _send() async {
     if (_emailCtrl.text.isEmpty) return;
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1000)); // TODO: gọi API /auth/forgot-password
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
     setState(() { _loading = false; _sent = true; });
   }

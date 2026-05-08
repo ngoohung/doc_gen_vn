@@ -1,12 +1,9 @@
-// lib/shared/layout/sidebar_nav.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/tokens/app_colors.dart';
-import '../../core/tokens/app_spacing.dart';
 import '../../core/tokens/app_typography.dart';
-import '../../core/theme/theme_provider.dart';
+import '../../core/theme/app_theme.dart';
 
-// ── Nav items ─────────────────────────────────────────────────────────────────
 class _NavItem {
   final String label;
   final IconData icon;
@@ -26,7 +23,6 @@ const _adminNav = [
   _NavItem('Cài đặt',       Icons.settings_outlined),
 ];
 
-/// Sidebar navigation — 240px (full) / 56px (collapsed)
 class SidebarNav extends ConsumerWidget {
   final int selectedIndex;
   final bool isAdmin;
@@ -47,45 +43,35 @@ class SidebarNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = Theme.of(context).brightness;
     final items = isAdmin ? _adminNav : _memberNav;
-
     final bg     = AppColors.card(brightness);
     final border = AppColors.border(brightness);
 
-    // SỬA LỖI TẠI ĐÂY: Đổi Container thành AnimatedContainer và cấp width cố định
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      // Khi thu gọn rộng 64px, khi mở rộng 240px (hoặc dùng AppSpacing.sidebar)
+      duration: AppTheme.themeTransitionDuration,
+      curve: AppTheme.themeCurve,
       width: collapsed ? 64.0 : 240.0,
       decoration: BoxDecoration(
         color: bg,
-        border: Border(right: BorderSide(color: border)), // Thêm đường kẻ viền phải
+        border: Border(right: BorderSide(color: border)),
       ),
       child: Column(
         children: [
-          // ── Brand ──────────────────────────────────────────────────────────
           _Brand(collapsed: collapsed),
           Divider(height: 1, color: border),
-
-          // ── Nav items ──────────────────────────────────────────────────────
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Column(
-                children: [
-                  ...items.asMap().entries.map((e) => _NavTile(
-                    item: e.value,
-                    selected: selectedIndex == e.key,
-                    collapsed: collapsed,
-                    onTap: () => onItemTap(e.key),
-                    brightness: brightness,
-                  )),
-                ],
+                children: items.asMap().entries.map((e) => _NavTile(
+                  item: e.value,
+                  selected: selectedIndex == e.key,
+                  collapsed: collapsed,
+                  onTap: () => onItemTap(e.key),
+                  brightness: brightness,
+                )).toList(),
               ),
             ),
           ),
-
-          // ── Bottom: user + collapse toggle ─────────────────────────────────
           Divider(height: 1, color: border),
           _SidebarBottom(
             collapsed: collapsed,
@@ -98,20 +84,20 @@ class SidebarNav extends ConsumerWidget {
   }
 }
 
-// ── Brand block ───────────────────────────────────────────────────────────────
 class _Brand extends StatelessWidget {
   final bool collapsed;
   const _Brand({required this.collapsed});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      height: 56, // topbar-h align
+      height: 56,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
+          mainAxisAlignment: collapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
-            // Logo mark — squircle with <> glyph
             Container(
               width: 28, height: 28,
               decoration: BoxDecoration(
@@ -119,36 +105,19 @@ class _Brand extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: const Text(
-                '</>',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
+              child: const Icon(Icons.code, color: Colors.white, size: 16),
             ),
             if (!collapsed) ...[
               const SizedBox(width: 10),
               RichText(
-                text: const TextSpan(
+                text: TextSpan(
                   style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: Color(0xFF111827),
+                    fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF111827),
                   ),
-                  children: [
+                  children: const [
                     TextSpan(text: 'DocGen'),
-                    TextSpan(
-                      text: ' VN',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    TextSpan(text: ' VN', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -160,246 +129,83 @@ class _Brand extends StatelessWidget {
   }
 }
 
-// ── Nav tile ──────────────────────────────────────────────────────────────────
-class _NavTile extends StatefulWidget {
+class _NavTile extends StatelessWidget {
   final _NavItem item;
   final bool selected;
   final bool collapsed;
   final VoidCallback onTap;
   final Brightness brightness;
 
-  const _NavTile({
-    required this.item,
-    required this.selected,
-    required this.collapsed,
-    required this.onTap,
-    required this.brightness,
-  });
-
-  @override
-  State<_NavTile> createState() => _NavTileState();
-}
-
-class _NavTileState extends State<_NavTile> {
-  bool _hovered = false;
+  const _NavTile({required this.item, required this.selected, required this.collapsed, required this.onTap, required this.brightness});
 
   @override
   Widget build(BuildContext context) {
-    final b    = widget.brightness;
-    final sel  = widget.selected;
-
-    Color bg = Colors.transparent;
-    if (sel)     bg = AppColors.primarySoft;
-    if (_hovered && !sel) bg = AppColors.hover(b);
-
-    final textColor = sel
-        ? AppColors.primary
-        : AppColors.fgMuted(b);
-    final iconColor = sel
-        ? AppColors.primary
-        : AppColors.fgMuted(b);
-
-    final tile = GestureDetector(
-      onTap: widget.onTap,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit:  (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.collapsed ? 0 : 10,
-            vertical: 7,
-          ),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: widget.collapsed
-              ? Center(
-            child: Icon(widget.item.icon, size: 20, color: iconColor),
-          )
-              : Row(
-            children: [
-              Icon(widget.item.icon, size: 18, color: iconColor),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.item.label,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: textColor,
-                    fontWeight: sel
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (widget.item.count != null)
-                Text(
-                  '${widget.item.count}',
-                  style: AppTypography.caption.copyWith(
-                    color: sel
-                        ? AppColors.primary
-                        : AppColors.fgSubtle(b),
-                    fontFamily: 'JetBrainsMono',
-                  ),
-                ),
-            ],
-          ),
+    final color = selected ? AppColors.primary : AppColors.fgMuted(brightness);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppTheme.themeTransitionDuration,
+        padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primarySoft : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: collapsed
+            ? Center(child: Icon(item.icon, size: 20, color: color))
+            : Row(
+          children: [
+            Icon(item.icon, size: 18, color: color),
+            const SizedBox(width: 10),
+            Expanded(child: Text(item.label, style: AppTypography.bodySmall.copyWith(color: color, fontWeight: selected ? FontWeight.w600 : FontWeight.w500))),
+          ],
         ),
       ),
-    );
-
-    if (widget.collapsed) {
-      return Tooltip(
-        message: widget.item.label,
-        preferBelow: false,
-        child: SizedBox(width: double.infinity, height: 40, child: tile),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: tile,
     );
   }
 }
 
-// ── Sidebar bottom (user avatar + collapse btn) ───────────────────────────────
-class _SidebarBottom extends ConsumerWidget {
+class _SidebarBottom extends StatelessWidget {
   final bool collapsed;
   final VoidCallback? onToggleCollapse;
   final Brightness brightness;
-
-  const _SidebarBottom({
-    required this.collapsed,
-    required this.onToggleCollapse,
-    required this.brightness,
-  });
+  const _SidebarBottom({required this.collapsed, required this.onToggleCollapse, required this.brightness});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final fgSubtle = AppColors.fgSubtle(brightness);
-
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          // User avatar row
           if (!collapsed)
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
               child: Row(
                 children: [
-                  _Avatar(initials: 'DV', color: AppColors.primary),
+                  Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(9999)),
+                    alignment: Alignment.center,
+                    child: Text('DV', style: AppTypography.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Dev User',
-                            style: AppTypography.bodySmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                            )),
-                        Text('dev@docgenvn.com',
-                            style: AppTypography.caption.copyWith(
-                              color: fgSubtle,
-                            )),
+                        Text('Dev User', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+                        Text('dev@docgenvn.com', style: AppTypography.caption.copyWith(color: AppColors.fgSubtle(brightness))),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-
-          // Collapse toggle (desktop only)
           if (onToggleCollapse != null)
-            _IconBtn(
-              icon: collapsed
-                  ? Icons.keyboard_double_arrow_right
-                  : Icons.keyboard_double_arrow_left,
-              tooltip: collapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar',
-              onTap: onToggleCollapse!,
-              brightness: brightness,
+            IconButton(
+              icon: Icon(collapsed ? Icons.keyboard_double_arrow_right : Icons.keyboard_double_arrow_left, size: 16),
+              onPressed: onToggleCollapse,
             ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Small reusable pieces ─────────────────────────────────────────────────────
-class _Avatar extends StatelessWidget {
-  final String initials;
-  final Color color;
-  const _Avatar({required this.initials, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28, height: 28,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(9999),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: AppTypography.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatefulWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final Brightness brightness;
-  const _IconBtn({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    required this.brightness,
-  });
-
-  @override
-  State<_IconBtn> createState() => _IconBtnState();
-}
-
-class _IconBtnState extends State<_IconBtn> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: widget.tooltip,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit:  (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            width: double.infinity,
-            height: 32,
-            decoration: BoxDecoration(
-              color: _hovered
-                  ? AppColors.hover(widget.brightness)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              widget.icon,
-              size: 16,
-              color: AppColors.fgSubtle(widget.brightness),
-            ),
-          ),
-        ),
       ),
     );
   }
