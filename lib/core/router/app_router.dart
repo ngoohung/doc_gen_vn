@@ -1,3 +1,5 @@
+// lib/core/router/app_router.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +23,7 @@ class AppRoutes {
   static const profile        = '/profile';
   static const adminDashboard = '/admin';
   static const adminUsers     = '/admin/users';
+  static const adminProfile   = '/admin/profile'; // Thêm route này cho Admin
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -57,6 +60,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: AppRoutes.adminDashboard, pageBuilder: (_, s) => _fade(const DashboardScreen(), s)),
           GoRoute(path: AppRoutes.adminUsers,     pageBuilder: (_, s) => _fade(const UserManagementScreen(), s)),
+          // Thêm route profile vào đây để giữ sidebar Admin
+          GoRoute(path: AppRoutes.adminProfile,   pageBuilder: (_, s) => _fade(const ProfileScreen(), s)),
         ],
       ),
     ],

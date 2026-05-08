@@ -1,3 +1,4 @@
+// lib/shared/layout/topbar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,15 +27,6 @@ class TopBar extends ConsumerStatefulWidget {
 }
 
 class _TopBarState extends ConsumerState<TopBar> {
-  final _searchCtrl = TextEditingController();
-  bool _searchFocused = false;
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
@@ -66,17 +58,10 @@ class _TopBarState extends ConsumerState<TopBar> {
                       onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
                   _Breadcrumb(title: title, fg: fg, subtle: subtle),
+
+                  // Dùng Spacer duy nhất ở đây sẽ đẩy cụm Avatar và Theme sáng mép phải tuyệt đối
                   const Spacer(),
-                  Flexible(
-                    flex: 3,
-                    child: _SearchBar(
-                      controller: _searchCtrl,
-                      focused: _searchFocused,
-                      onFocusChange: (v) => setState(() => _searchFocused = v),
-                      brightness: brightness,
-                    ),
-                  ),
-                  const Spacer(),
+
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -94,62 +79,6 @@ class _TopBarState extends ConsumerState<TopBar> {
             ),
           ),
           Divider(height: 1, color: border),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final bool focused;
-  final ValueChanged<bool> onFocusChange;
-  final Brightness brightness;
-
-  const _SearchBar({
-    required this.controller,
-    required this.focused,
-    required this.onFocusChange,
-    required this.brightness,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg     = AppColors.bg(brightness);
-    final border = focused ? AppColors.primary : AppColors.border(brightness);
-    final subtle = AppColors.fgSubtle(brightness);
-
-    return AnimatedContainer(
-      duration: AppTheme.themeTransitionDuration,
-      curve: AppTheme.themeCurve,
-      height: 34,
-      constraints: const BoxConstraints(maxWidth: 480),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: border, width: focused ? 1.5 : 1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 10),
-          Icon(Icons.search, size: 14, color: subtle),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Focus(
-              onFocusChange: onFocusChange,
-              child: TextField(
-                controller: controller,
-                style: AppTypography.bodySmall.copyWith(color: AppColors.fg(brightness)),
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm...',
-                  hintStyle: AppTypography.bodySmall.copyWith(color: subtle),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

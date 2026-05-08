@@ -30,11 +30,12 @@ class AppShell extends ConsumerWidget {
 
   String get resolvedTitle {
     if (pageTitle != null) return pageTitle!;
-    if (location.startsWith('/generate'))    return 'Sinh tài liệu';
-    if (location.startsWith('/history'))     return 'Lịch sử';
-    if (location.startsWith('/profile'))     return 'Cài đặt';
-    if (location.startsWith('/admin/users')) return 'Quản lý người dùng';
-    if (location.startsWith('/admin'))       return 'Dashboard';
+    if (location.startsWith('/generate'))      return 'Sinh tài liệu';
+    if (location.startsWith('/history'))       return 'Lịch sử';
+    if (location.startsWith('/admin/profile')) return 'Cài đặt hệ thống'; // Tiêu đề riêng cho Admin
+    if (location.startsWith('/profile'))       return 'Cài đặt';
+    if (location.startsWith('/admin/users'))   return 'Quản lý người dùng';
+    if (location.startsWith('/admin'))         return 'Dashboard';
     return 'DocGen VN';
   }
 
@@ -48,16 +49,29 @@ class AppShell extends ConsumerWidget {
   }
 }
 
-// ── Desktop ───────────────────────────────────────────────────────────────────
+// Hàm bổ trợ để lấy index chính xác, ưu tiên đường dẫn dài hơn (specific path)
+int _getSelectedIndex(String location, List<(IconData, String, String)> items) {
+  int bestMatchIndex = 0;
+  int longestMatchLength = -1;
+
+  for (int i = 0; i < items.length; i++) {
+    final path = items[i].$2;
+    if (location.startsWith(path) && path.length > longestMatchLength) {
+      longestMatchLength = path.length;
+      bestMatchIndex = i;
+    }
+  }
+  return bestMatchIndex;
+}
+
 class _DesktopShell extends ConsumerWidget {
   final AppShell shell;
   const _DesktopShell({required this.shell});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items  = _navItemsFor(shell.isAdmin);
-    int idx = items.indexWhere((i) => shell.location.startsWith(i.$2));
-    if (idx < 0) idx = 0;
+    final items = _navItemsFor(shell.isAdmin);
+    final idx = _getSelectedIndex(shell.location, items);
 
     return Scaffold(
       body: Row(
@@ -85,6 +99,19 @@ class _DesktopShell extends ConsumerWidget {
     );
   }
 }
+
+// Cập nhật _navItemsFor để đồng bộ với Sidebar và thêm nút Cài đặt cho Admin
+List<(IconData, String, String)> _navItemsFor(bool isAdmin) => isAdmin
+    ? [
+  (Icons.bar_chart_outlined, '/admin',         'Dashboard'),
+  (Icons.people_outline,     '/admin/users',   'Người dùng'),
+  (Icons.settings_outlined,  '/admin/profile', 'Cài đặt'), // Chuyển đến route của Admin
+]
+    : [
+  (Icons.bolt_outlined,      '/generate', 'Sinh tài liệu'),
+  (Icons.history_outlined,   '/history',  'Lịch sử'),
+  (Icons.person_outline,     '/profile',  'Cài đặt'),
+];
 
 // ── Tablet (NavigationRail) ────────────────────────────────────────────────────
 class _TabletShell extends StatelessWidget {
@@ -174,14 +201,3 @@ class _MobileShell extends StatelessWidget {
     );
   }
 }
-
-List<(IconData, String, String)> _navItemsFor(bool isAdmin) => isAdmin
-    ? [
-  (Icons.bar_chart_outlined, '/admin',       'Dashboard'),
-  (Icons.people_outline,     '/admin/users', 'Người dùng'),
-]
-    : [
-  (Icons.bolt_outlined,    '/generate', 'Sinh tài liệu'),
-  (Icons.history_outlined, '/history',  'Lịch sử'),
-  (Icons.person_outline,   '/profile',  'Cài đặt'),
-];

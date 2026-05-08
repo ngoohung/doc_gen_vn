@@ -1,3 +1,4 @@
+// lib/features/profile/presentation/profile_screen.dart
 import 'package:flutter/material.dart';
 
 import '../../../core/tokens/app_colors.dart';
@@ -235,11 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: AppSpacing.s4),
                   _StatRow(label: 'Tài liệu đã tạo', value: '24', muted: muted, fg: fg),
                   Divider(height: AppSpacing.s4, color: border),
-                  _StatRow(label: 'Tokens đã dùng', value: '12,480', muted: muted, fg: fg),
-                  Divider(height: AppSpacing.s4, color: border),
                   _StatRow(label: 'Tệp đã xử lý', value: '38', muted: muted, fg: fg),
-                  Divider(height: AppSpacing.s4, color: border),
-                  _StatRow(label: 'Gói hiện tại', value: 'Miễn phí', muted: muted, fg: fg),
                 ],
               ),
             ),
@@ -270,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         title: 'Xóa tài khoản',
                         message:
-                            'Toàn bộ tài liệu và dữ liệu sẽ bị xóa vĩnh viễn. Bạn có chắc không?',
+                        'Toàn bộ tài liệu và dữ liệu sẽ bị xóa vĩnh viễn. Bạn có chắc không?',
                         confirmLabel: 'Xóa tài khoản',
                         destructive: true,
                       );

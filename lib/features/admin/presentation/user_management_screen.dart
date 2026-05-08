@@ -1,3 +1,5 @@
+// lib/features/admin/presentation/user_management_screen.dart
+
 import 'package:flutter/material.dart';
 
 import '../../../core/tokens/app_colors.dart';
@@ -197,21 +199,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   Expanded(
                     child: _filtered.isEmpty
                         ? DgEmptyState(
-                            icon: Icons.people_outline,
-                            message: 'Không tìm thấy người dùng',
-                          )
+                      icon: Icons.people_outline,
+                      message: 'Không tìm thấy người dùng',
+                    )
                         : ListView.separated(
-                            itemCount: _filtered.length,
-                            separatorBuilder: (_, __) =>
-                                Divider(height: 1, color: border),
-                            itemBuilder: (_, i) => _UserTableRow(
-                              user: _filtered[i],
-                              isWide: isWide,
-                              isDark: isDark,
-                              fg: fg, muted: muted, border: border,
-                              onToggleLock: () => _toggleLock(_filtered[i]),
-                            ),
-                          ),
+                      itemCount: _filtered.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: border),
+                      itemBuilder: (_, i) => _UserTableRow(
+                        user: _filtered[i],
+                        isWide: isWide,
+                        isDark: isDark,
+                        fg: fg, muted: muted, border: border,
+                        onToggleLock: () => _toggleLock(_filtered[i]),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -246,17 +248,16 @@ class _TableHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text('Người dùng',
-              style: AppTypography.label.copyWith(color: subtle))),
-          Expanded(flex: 2, child: Text('Email',
-              style: AppTypography.label.copyWith(color: subtle))),
-          SizedBox(width: 100, child: Text('Tài liệu',
-              style: AppTypography.label.copyWith(color: subtle))),
-          SizedBox(width: 80, child: Text('Vai trò',
-              style: AppTypography.label.copyWith(color: subtle))),
-          SizedBox(width: 100, child: Text('Trạng thái',
-              style: AppTypography.label.copyWith(color: subtle))),
-          const SizedBox(width: 80),
+          Expanded(flex: 3, child: Text('Người dùng', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: AppSpacing.s3), // Thêm khoảng cách giữa các cột
+          Expanded(flex: 2, child: Text('Email', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: AppSpacing.s3),
+          SizedBox(width: 80, child: Text('Tài liệu', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: AppSpacing.s3),
+          SizedBox(width: 100, child: Text('Vai trò', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: AppSpacing.s3),
+          SizedBox(width: 120, child: Text('Trạng thái', style: AppTypography.label.copyWith(color: subtle))),
+          const SizedBox(width: 80), // Cột cho nút Khóa
         ],
       ),
     );
@@ -309,7 +310,6 @@ class _UserTableRowState extends State<_UserTableRow> {
         ),
         child: Row(
           children: [
-            // Name + avatar
             Expanded(
               flex: 3,
               child: Row(
@@ -329,7 +329,7 @@ class _UserTableRowState extends State<_UserTableRow> {
                 ],
               ),
             ),
-            // Email
+            const SizedBox(width: AppSpacing.s3),
             Expanded(
               flex: 2,
               child: Text(
@@ -338,35 +338,26 @@ class _UserTableRowState extends State<_UserTableRow> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Docs count
-            SizedBox(
-              width: 100,
-              child: Text(
-                '${user.docsCount}',
-                style: AppTypography.code.copyWith(
-                  color: widget.fg, fontSize: 13,
-                ),
-              ),
-            ),
-            // Role badge
+            const SizedBox(width: AppSpacing.s3),
             SizedBox(
               width: 80,
-              child: user.role == 'admin'
-                  ? DgBadge.info(label: 'Admin')
-                  : DgBadge.neutral(label: 'User'),
+              child: Text('${user.docsCount}', style: AppTypography.code.copyWith(color: widget.fg)),
             ),
-            // Status badge
+            const SizedBox(width: AppSpacing.s3),
             SizedBox(
               width: 100,
-              child: locked
-                  ? DgBadge.error(label: 'Bị khóa')
-                  : DgBadge.success(label: 'Hoạt động'),
+              child: user.role == 'admin' ? DgBadge.info(label: 'Admin') : DgBadge.neutral(label: 'User'),
             ),
-            // Action
+            const SizedBox(width: AppSpacing.s3),
+            SizedBox(
+              width: 120,
+              child: locked ? DgBadge.error(label: 'Bị khóa') : DgBadge.success(label: 'Hoạt động'),
+            ),
+            const SizedBox(width: AppSpacing.s3),
             SizedBox(
               width: 80,
               child: DgButton.ghost(
-                label: locked ? 'Mở khóa' : 'Khóa',
+                label: locked ? 'Mở' : 'Khóa',
                 onPressed: widget.onToggleLock,
               ),
             ),

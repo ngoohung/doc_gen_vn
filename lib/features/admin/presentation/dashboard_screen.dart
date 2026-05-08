@@ -15,14 +15,13 @@ class DashboardScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
-    final cols   = Responsive.isDesktop(context) ? 4 : 2;
+    final cols   = Responsive.isDesktop(context) ? 3 : (Responsive.isTablet(context) ? 2 : 1);
 
-    // TODO: thay bằng dữ liệu thực từ API GET /admin/stats
+    // Đã xóa phần Tokens
     final stats = [
       _Stat(label: 'Tổng người dùng', value: '1,248', icon: Icons.people_outline, delta: '+12%'),
       _Stat(label: 'Tài liệu đã tạo', value: '8,432', icon: Icons.description_outlined, delta: '+24%'),
       _Stat(label: 'Yêu cầu hôm nay', value: '342',   icon: Icons.bolt_outlined, delta: '+8%'),
-      _Stat(label: 'Tokens đã dùng',   value: '2.1M',  icon: Icons.memory_outlined, delta: '+18%'),
     ];
 
     return SingleChildScrollView(
@@ -37,35 +36,34 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s6),
 
-          // ── Stat cards ────────────────────────────────────────────
           GridView.count(
             crossAxisCount: cols,
             crossAxisSpacing: AppSpacing.s3,
             mainAxisSpacing: AppSpacing.s3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: Responsive.isMobile(context) ? 1.8 : 2.4,
+            childAspectRatio: Responsive.isMobile(context) ? 2.0 : 2.5,
             children: stats.map((s) => _StatCard(stat: s, isDark: isDark, fg: fg, muted: muted)).toList(),
           ),
           const SizedBox(height: AppSpacing.s6),
 
-          // ── Charts row ────────────────────────────────────────────
+          // Giữ nguyên phần Charts
           Responsive.isDesktop(context)
               ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: _LineChartCard(isDark: isDark, fg: fg, muted: muted)),
-                    const SizedBox(width: AppSpacing.s4),
-                    Expanded(flex: 2, child: _PieChartCard(isDark: isDark, fg: fg, muted: muted)),
-                  ],
-                )
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: _LineChartCard(isDark: isDark, fg: fg, muted: muted)),
+              const SizedBox(width: AppSpacing.s4),
+              Expanded(flex: 2, child: _PieChartCard(isDark: isDark, fg: fg, muted: muted)),
+            ],
+          )
               : Column(
-                  children: [
-                    _LineChartCard(isDark: isDark, fg: fg, muted: muted),
-                    const SizedBox(height: AppSpacing.s4),
-                    _PieChartCard(isDark: isDark, fg: fg, muted: muted),
-                  ],
-                ),
+            children: [
+              _LineChartCard(isDark: isDark, fg: fg, muted: muted),
+              const SizedBox(height: AppSpacing.s4),
+              _PieChartCard(isDark: isDark, fg: fg, muted: muted),
+            ],
+          ),
         ],
       ),
     );
