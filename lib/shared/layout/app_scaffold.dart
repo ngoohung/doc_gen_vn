@@ -1,3 +1,4 @@
+// lib/shared/layout/app_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,7 +40,7 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return switch (Responsive.sizeOf(context)) {
+    return switch (Responsive.of(context)) {
       ScreenSize.desktop => _DesktopShell(shell: this),
       ScreenSize.tablet  => _TabletShell(shell: this),
       ScreenSize.mobile  => _MobileShell(shell: this),
@@ -54,17 +55,26 @@ class _DesktopShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final items  = _navItemsFor(shell.isAdmin);
+    int idx = items.indexWhere((i) => shell.location.startsWith(i.$2));
+    if (idx < 0) idx = 0;
+
     return Scaffold(
       body: Row(
         children: [
-          SidebarNav(currentLocation: shell.location, isAdmin: shell.isAdmin),
+          SidebarNav(
+            selectedIndex: idx,
+            isAdmin: shell.isAdmin,
+            collapsed: false,
+            onItemTap: (i) => context.go(items[i].$2),
+          ),
           Expanded(
             child: Column(
               children: [
-                Topbar(
-                  title: shell.resolvedTitle,
-                  breadcrumbs: shell.breadcrumbs,
-                  actions: shell.topbarActions,
+                TopBar(
+                  selectedIndex: idx,
+                  isAdmin: shell.isAdmin,
+                  showMenuButton: false,
                 ),
                 Expanded(child: shell.child),
               ],
@@ -117,7 +127,18 @@ class _TabletShell extends StatelessWidget {
               )).toList(),
             ),
           ),
-          Expanded(child: shell.child),
+          Expanded(
+            child: Column(
+              children: [
+                TopBar(
+                  selectedIndex: idx,
+                  isAdmin: shell.isAdmin,
+                  showMenuButton: false,
+                ),
+                Expanded(child: shell.child),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -131,11 +152,24 @@ class _MobileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items  = _navItemsFor(shell.isAdmin);
+    int idx = items.indexWhere((i) => shell.location.startsWith(i.$2));
+    if (idx < 0) idx = 0;
+
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: TopBar(
+          selectedIndex: idx,
+          isAdmin: shell.isAdmin,
+          showMenuButton: true,
+        ),
+      ),
       body: shell.child,
       bottomNavigationBar: DgBottomNavBar(
-        currentLocation: shell.location,
+        selectedIndex: idx,
         isAdmin: shell.isAdmin,
+        onTap: (i) => context.go(items[i].$2),
       ),
     );
   }
@@ -143,11 +177,11 @@ class _MobileShell extends StatelessWidget {
 
 List<(IconData, String, String)> _navItemsFor(bool isAdmin) => isAdmin
     ? [
-        (Icons.bar_chart_outlined, '/admin',       'Dashboard'),
-        (Icons.people_outline,     '/admin/users', 'Người dùng'),
-      ]
+  (Icons.bar_chart_outlined, '/admin',       'Dashboard'),
+  (Icons.people_outline,     '/admin/users', 'Người dùng'),
+]
     : [
-        (Icons.bolt_outlined,    '/generate', 'Sinh tài liệu'),
-        (Icons.history_outlined, '/history',  'Lịch sử'),
-        (Icons.person_outline,   '/profile',  'Cài đặt'),
-      ];
+  (Icons.bolt_outlined,    '/generate', 'Sinh tài liệu'),
+  (Icons.history_outlined, '/history',  'Lịch sử'),
+  (Icons.person_outline,   '/profile',  'Cài đặt'),
+];

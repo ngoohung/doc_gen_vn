@@ -1,5 +1,9 @@
+// lib/core/theme/theme_provider.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+final sharedPrefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError());
 
 // ── ThemeMode Notifier ────────────────────────────────────────────────────────
 class ThemeNotifier extends StateNotifier<ThemeMode> {
@@ -17,6 +21,6 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
 }
 
 final themeModeProvider =
-    StateNotifierProvider<ThemeNotifier, ThemeMode>(
-  (ref) => ThemeNotifier(),
+StateNotifierProvider<ThemeNotifier, ThemeMode>(
+      (ref) => ThemeNotifier(),
 );

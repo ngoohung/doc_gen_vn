@@ -1,3 +1,4 @@
+// lib/core/tokens/app_colors.dart
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -35,4 +36,13 @@ class AppColors {
   static const fgDisabledDark = Color(0xFF64748B);
   static const shadowBase     = Color(0x0A0F172A);
   static const shadowMd       = Color(0x140F172A);
+
+  static Color bg(Brightness b) => b == Brightness.dark ? bgDark : bgLight;
+  static Color card(Brightness b) => b == Brightness.dark ? cardDark : cardLight;
+  static Color border(Brightness b) => b == Brightness.dark ? borderDark : borderLight;
+  static Color fg(Brightness b) => b == Brightness.dark ? fgDark : fgLight;
+  static Color fgMuted(Brightness b) => b == Brightness.dark ? fgMutedDark : fgMutedLight;
+  static Color fgSubtle(Brightness b) => b == Brightness.dark ? fgSubtleDark : fgSubtleLight;
+  static Color hover(Brightness b) => b == Brightness.dark ? hoverDark : hoverLight;
+  static Color disabledMode(Brightness b) => b == Brightness.dark ? fgDisabledDark : fgDisabled;
 }

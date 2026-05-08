@@ -1,14 +1,12 @@
+// lib/core/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import '../tokens/app_colors.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_typography.dart';
 
-/// DocGen VN — ThemeData (Light + Dark)
-/// True dark: #0F172A — no faux-gray dark modes.
 class AppTheme {
   AppTheme._();
 
-  // ── Two shadow stops only ─────────────────────────────────────────────────
   static List<BoxShadow> get shadowSm => const [
     BoxShadow(color: AppColors.shadowBase, blurRadius: 2, offset: Offset(0, 1)),
   ];
@@ -16,9 +14,6 @@ class AppTheme {
     BoxShadow(color: AppColors.shadowMd, blurRadius: 12, offset: Offset(0, 4)),
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // LIGHT
-  // ─────────────────────────────────────────────────────────────────────────
   static ThemeData light() {
     final base = ThemeData.light(useMaterial3: true);
     return base.copyWith(
@@ -35,7 +30,7 @@ class AppTheme {
         outline:          AppColors.borderLight,
         outlineVariant:   AppColors.borderStrong,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardLight,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -82,9 +77,6 @@ class AppTheme {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DARK
-  // ─────────────────────────────────────────────────────────────────────────
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
     return base.copyWith(
@@ -101,7 +93,7 @@ class AppTheme {
         outline:          AppColors.borderDark,
         outlineVariant:   Color(0xFF374151),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -147,10 +139,6 @@ class AppTheme {
       switchTheme: _switchTheme(),
     );
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Component sub-themes
-  // ─────────────────────────────────────────────────────────────────────────
 
   static TextTheme _textTheme(Color fg, Color muted, Color subtle) => TextTheme(
     displayLarge:   AppTypography.h1.copyWith(color: fg),
@@ -206,9 +194,9 @@ class AppTheme {
         borderSide: BorderSide(color: borderColor.withOpacity(0.5)),
       ),
       prefixIconColor: WidgetStateColor.resolveWith((s) =>
-          s.contains(WidgetState.focused) ? AppColors.primary : hint),
+      s.contains(WidgetState.focused) ? AppColors.primary : hint),
       suffixIconColor: WidgetStateColor.resolveWith((s) =>
-          s.contains(WidgetState.focused) ? AppColors.primary : hint),
+      s.contains(WidgetState.focused) ? AppColors.primary : hint),
     );
   }
 
@@ -221,7 +209,7 @@ class AppTheme {
         return AppColors.primary;
       }),
       foregroundColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.disabled) ? Colors.white54 : Colors.white),
+      s.contains(WidgetState.disabled) ? Colors.white54 : Colors.white),
       overlayColor: WidgetStateProperty.all(Colors.transparent),
       elevation: WidgetStateProperty.all(0),
       padding: WidgetStateProperty.all(
@@ -243,9 +231,9 @@ class AppTheme {
     return OutlinedButtonThemeData(
       style: ButtonStyle(
         foregroundColor: WidgetStateProperty.resolveWith((s) =>
-            s.contains(WidgetState.disabled) ? AppColors.fgDisabled : fg),
+        s.contains(WidgetState.disabled) ? AppColors.fgDisabled : fg),
         backgroundColor: WidgetStateProperty.resolveWith((s) =>
-            s.contains(WidgetState.hovered) ? hover : Colors.transparent),
+        s.contains(WidgetState.hovered) ? hover : Colors.transparent),
         overlayColor: WidgetStateProperty.all(Colors.transparent),
         side: WidgetStateProperty.resolveWith((s) => BorderSide(
           color: s.contains(WidgetState.focused) ? AppColors.primary : border,
@@ -267,10 +255,10 @@ class AppTheme {
   static TextButtonThemeData _textBtn() => TextButtonThemeData(
     style: ButtonStyle(
       foregroundColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.disabled) ? AppColors.fgDisabled : AppColors.primary),
+      s.contains(WidgetState.disabled) ? AppColors.fgDisabled : AppColors.primary),
       overlayColor: WidgetStateProperty.all(Colors.transparent),
       backgroundColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.hovered) ? AppColors.primarySoft : Colors.transparent),
+      s.contains(WidgetState.hovered) ? AppColors.primarySoft : Colors.transparent),
       elevation: WidgetStateProperty.all(0),
       padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -330,9 +318,9 @@ class AppTheme {
     );
   }
 
-  static DialogTheme _dialogTheme(Brightness b) {
+  static DialogThemeData _dialogTheme(Brightness b) {
     final isDark = b == Brightness.dark;
-    return DialogTheme(
+    return DialogThemeData(
       backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -361,7 +349,7 @@ class AppTheme {
 
   static CheckboxThemeData _checkboxTheme() => CheckboxThemeData(
     fillColor: WidgetStateProperty.resolveWith((s) =>
-        s.contains(WidgetState.selected) ? AppColors.primary : Colors.transparent),
+    s.contains(WidgetState.selected) ? AppColors.primary : Colors.transparent),
     checkColor: WidgetStateProperty.all(Colors.white),
     side: const BorderSide(color: AppColors.borderStrong, width: 1.5),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
@@ -369,9 +357,9 @@ class AppTheme {
 
   static SwitchThemeData _switchTheme() => SwitchThemeData(
     thumbColor: WidgetStateProperty.resolveWith((s) =>
-        s.contains(WidgetState.selected) ? Colors.white : AppColors.fgDisabled),
+    s.contains(WidgetState.selected) ? Colors.white : AppColors.fgDisabled),
     trackColor: WidgetStateProperty.resolveWith((s) =>
-        s.contains(WidgetState.selected) ? AppColors.primary : AppColors.borderStrong),
+    s.contains(WidgetState.selected) ? AppColors.primary : AppColors.borderStrong),
     trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
   );
 }

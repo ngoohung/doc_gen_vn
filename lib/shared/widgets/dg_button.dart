@@ -1,18 +1,10 @@
+// lib/shared/widgets/dg_button.dart
 import 'package:flutter/material.dart';
 import '../../core/tokens/app_colors.dart';
 import '../../core/tokens/app_typography.dart';
 
-/// Variant của DgButton
 enum DgButtonVariant { primary, secondary, ghost, danger }
 
-/// DgButton — nút cơ bản của DocGen VN
-///
-/// Dùng:
-///   DgButton(label: 'Sinh tài liệu', onPressed: _submit)
-///   DgButton(label: 'Xuất PDF', variant: DgButtonVariant.secondary, ...)
-///   DgButton(label: 'Hủy', variant: DgButtonVariant.ghost, ...)
-///   DgButton(label: 'Xóa', variant: DgButtonVariant.danger, ...)
-///   DgButton(label: '...', loading: true, onPressed: null)
 class DgButton extends StatefulWidget {
   final String label;
   final DgButtonVariant variant;
@@ -22,6 +14,7 @@ class DgButton extends StatefulWidget {
   final IconData? leadingIcon;
   final IconData? trailingIcon;
   final double? width;
+  final bool fullWidth;
 
   const DgButton({
     super.key,
@@ -33,59 +26,88 @@ class DgButton extends StatefulWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.width,
+    this.fullWidth = false,
   });
 
-  /// Named constructors cho tiện
   const DgButton.primary({
-    super.key,
+    Key? key,
     required String label,
     VoidCallback? onPressed,
     bool loading = false,
-    IconData? leadingIcon,
+    IconData? icon,
     double? width,
+    bool fullWidth = false,
   }) : this(
+    key: key,
     label: label,
     variant: DgButtonVariant.primary,
     onPressed: onPressed,
     loading: loading,
-    leadingIcon: leadingIcon,
+    leadingIcon: icon,
     width: width,
+    fullWidth: fullWidth,
   );
 
   const DgButton.secondary({
-    super.key,
+    Key? key,
     required String label,
     VoidCallback? onPressed,
     bool loading = false,
-    IconData? leadingIcon,
+    IconData? icon,
+    bool fullWidth = false,
   }) : this(
+    key: key,
     label: label,
     variant: DgButtonVariant.secondary,
     onPressed: onPressed,
     loading: loading,
-    leadingIcon: leadingIcon,
+    leadingIcon: icon,
+    fullWidth: fullWidth,
   );
 
   const DgButton.ghost({
-    super.key,
+    Key? key,
     required String label,
     VoidCallback? onPressed,
-    IconData? leadingIcon,
+    IconData? icon,
+    bool fullWidth = false,
   }) : this(
+    key: key,
     label: label,
     variant: DgButtonVariant.ghost,
     onPressed: onPressed,
-    leadingIcon: leadingIcon,
+    leadingIcon: icon,
+    fullWidth: fullWidth,
   );
 
   const DgButton.danger({
-    super.key,
+    Key? key,
     required String label,
     VoidCallback? onPressed,
+    IconData? icon,
+    bool fullWidth = false,
   }) : this(
+    key: key,
     label: label,
     variant: DgButtonVariant.danger,
     onPressed: onPressed,
+    leadingIcon: icon,
+    fullWidth: fullWidth,
+  );
+
+  const DgButton.destructive({
+    Key? key,
+    required String label,
+    VoidCallback? onPressed,
+    IconData? icon,
+    bool fullWidth = false,
+  }) : this(
+    key: key,
+    label: label,
+    variant: DgButtonVariant.danger,
+    onPressed: onPressed,
+    leadingIcon: icon,
+    fullWidth: fullWidth,
   );
 
   @override
@@ -122,7 +144,6 @@ class _DgButtonState extends State<DgButton>
 
   void _onTapDown(_) {
     if (_isDisabled) return;
-    // Primary: scale press effect. Ghost: skip scale
     if (widget.variant != DgButtonVariant.ghost) {
       _scaleCtrl.forward();
     }
@@ -163,7 +184,7 @@ class _DgButtonState extends State<DgButton>
         ],
         Text(
           widget.label,
-          style: AppTypography.bodyMd.copyWith(color: s.fgColor),
+          style: AppTypography.bodyMedium.copyWith(color: s.fgColor),
         ),
         if (widget.trailingIcon != null) ...[
           const SizedBox(width: 6),
@@ -187,7 +208,7 @@ class _DgButtonState extends State<DgButton>
           onTapCancel: _onTapCancel,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            width: widget.width,
+            width: widget.fullWidth ? double.infinity : widget.width,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
             decoration: BoxDecoration(
               color: s.bgColor,
@@ -202,7 +223,6 @@ class _DgButtonState extends State<DgButton>
   }
 }
 
-// ── Style resolver ─────────────────────────────────────────────────────────────
 class _Styles {
   final Color bgColor;
   final Color fgColor;
@@ -211,18 +231,18 @@ class _Styles {
 }
 
 _Styles _resolveStyle(
-  DgButtonVariant v,
-  Brightness b,
-  bool hovered,
-  bool pressed,
-  bool disabled,
-) {
+    DgButtonVariant v,
+    Brightness b,
+    bool hovered,
+    bool pressed,
+    bool disabled,
+    ) {
   if (disabled) {
     return _Styles(
       bgColor: v == DgButtonVariant.primary
-          ? AppColors.fgDisabled(b)
+          ? AppColors.disabledMode(b)
           : Colors.transparent,
-      fgColor: AppColors.fgDisabled(b),
+      fgColor: AppColors.disabledMode(b),
       border: v == DgButtonVariant.secondary
           ? Border.all(color: AppColors.border(b))
           : null,
@@ -254,8 +274,8 @@ _Styles _resolveStyle(
       Color bg = pressed
           ? AppColors.error.withOpacity(0.15)
           : hovered
-              ? AppColors.errorSoft
-              : Colors.transparent;
+          ? AppColors.errorSoft
+          : Colors.transparent;
       return _Styles(
         bgColor: bg,
         fgColor: AppColors.error,

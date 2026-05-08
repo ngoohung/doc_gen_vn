@@ -1,3 +1,4 @@
+// lib/shared/layout/sidebar_nav.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/tokens/app_colors.dart';
@@ -26,7 +27,6 @@ const _adminNav = [
 ];
 
 /// Sidebar navigation — 240px (full) / 56px (collapsed)
-/// Dùng ConsumerWidget để đọc theme cho icon toggle
 class SidebarNav extends ConsumerWidget {
   final int selectedIndex;
   final bool isAdmin;
@@ -51,8 +51,16 @@ class SidebarNav extends ConsumerWidget {
     final bg     = AppColors.card(brightness);
     final border = AppColors.border(brightness);
 
-    return Container(
-      color: bg,
+    // SỬA LỖI TẠI ĐÂY: Đổi Container thành AnimatedContainer và cấp width cố định
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      // Khi thu gọn rộng 64px, khi mở rộng 240px (hoặc dùng AppSpacing.sidebar)
+      width: collapsed ? 64.0 : 240.0,
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(right: BorderSide(color: border)), // Thêm đường kẻ viền phải
+      ),
       child: Column(
         children: [
           // ── Brand ──────────────────────────────────────────────────────────
@@ -209,35 +217,35 @@ class _NavTileState extends State<_NavTile> {
           ),
           child: widget.collapsed
               ? Center(
-                  child: Icon(widget.item.icon, size: 20, color: iconColor),
-                )
+            child: Icon(widget.item.icon, size: 20, color: iconColor),
+          )
               : Row(
-                  children: [
-                    Icon(widget.item.icon, size: 18, color: iconColor),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.item.label,
-                        style: AppTypography.bodySm.copyWith(
-                          color: textColor,
-                          fontWeight: sel
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    if (widget.item.count != null)
-                      Text(
-                        '${widget.item.count}',
-                        style: AppTypography.caption.copyWith(
-                          color: sel
-                              ? AppColors.primary
-                              : AppColors.fgSubtle(b),
-                          fontFamily: 'JetBrainsMono',
-                        ),
-                      ),
-                  ],
+            children: [
+              Icon(widget.item.icon, size: 18, color: iconColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.item.label,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: textColor,
+                    fontWeight: sel
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                  ),
                 ),
+              ),
+              if (widget.item.count != null)
+                Text(
+                  '${widget.item.count}',
+                  style: AppTypography.caption.copyWith(
+                    color: sel
+                        ? AppColors.primary
+                        : AppColors.fgSubtle(b),
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -289,7 +297,7 @@ class _SidebarBottom extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Dev User',
-                            style: AppTypography.bodySm.copyWith(
+                            style: AppTypography.bodySmall.copyWith(
                               fontWeight: FontWeight.w600,
                             )),
                         Text('dev@docgenvn.com',

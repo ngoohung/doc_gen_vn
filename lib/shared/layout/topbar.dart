@@ -1,3 +1,4 @@
+// lib/shared/layout/topbar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/tokens/app_colors.dart';
@@ -119,7 +120,7 @@ class _Breadcrumb extends StatelessWidget {
       children: [
         Text(
           'DocGen VN',
-          style: AppTypography.bodySm.copyWith(color: subtle),
+          style: AppTypography.bodySmall.copyWith(color: subtle),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -127,7 +128,7 @@ class _Breadcrumb extends StatelessWidget {
         ),
         Text(
           title,
-          style: AppTypography.bodySm.copyWith(
+          style: AppTypography.bodySmall.copyWith(
             color: fg,
             fontWeight: FontWeight.w500,
           ),
@@ -179,12 +180,12 @@ class _SearchBar extends StatelessWidget {
               onFocusChange: onFocusChange,
               child: TextField(
                 controller: controller,
-                style: AppTypography.bodySm.copyWith(
+                style: AppTypography.bodySmall.copyWith(
                   color: AppColors.fg(brightness),
                 ),
                 decoration: InputDecoration(
                   hintText: 'Tìm kiếm...',
-                  hintStyle: AppTypography.bodySm.copyWith(color: subtle),
+                  hintStyle: AppTypography.bodySmall.copyWith(color: subtle),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
