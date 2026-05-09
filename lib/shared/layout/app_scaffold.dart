@@ -10,6 +10,38 @@ import 'sidebar_nav.dart';
 import 'topbar.dart';
 import 'bottom_nav_bar.dart';
 
+// ── Hàm hỗ trợ lấy danh sách Menu ────────────────────────────────────────────
+List<(IconData, String, String)> _navItemsFor(bool isAdmin) => isAdmin
+    ? [
+  (Icons.bar_chart_outlined, '/', 'Dashboard'),
+  (Icons.people_outline, '/users', 'Người dùng'),
+  (Icons.settings_outlined, '/profile', 'Cài đặt'),
+]
+    : [
+  (Icons.bolt_outlined, '/generate', 'Sinh tài liệu'),
+  (Icons.history_outlined, '/history', 'Lịch sử'),
+  (Icons.person_outline, '/profile', 'Cài đặt'),
+];
+
+// ── Hàm hỗ trợ tìm Index đang được chọn ───────────────────────────────────────
+int _getSelectedIndex(String location, List<(IconData, String, String)> items) {
+  int bestMatchIndex = 0;
+  int longestMatchLength = -1;
+
+  for (int i = 0; i < items.length; i++) {
+    final path = items[i].$2;
+    // So khớp path hiện tại với path của menu (ưu tiên path dài nhất, ví dụ '/admin/users' thay vì '/')
+    if ((location == path || (path != '/' && location.startsWith(path))) && path.length > longestMatchLength) {
+      longestMatchLength = path.length;
+      bestMatchIndex = i;
+    }
+  }
+  return bestMatchIndex;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AppShell Main Wrapper
+// ════════════════════════════════════════════════════════════════════════════
 class AppShell extends ConsumerWidget {
   final String location;
   final Widget child;
@@ -28,57 +60,44 @@ class AppShell extends ConsumerWidget {
     this.topbarActions,
   });
 
-  String get resolvedTitle {
-    if (pageTitle != null) return pageTitle!;
-    if (location.startsWith('/generate'))      return 'Sinh tài liệu';
-    if (location.startsWith('/history'))       return 'Lịch sử';
-    if (location.startsWith('/admin/profile')) return 'Cài đặt hệ thống'; // Tiêu đề riêng cho Admin
-    if (location.startsWith('/profile'))       return 'Cài đặt';
-    if (location.startsWith('/admin/users'))   return 'Quản lý người dùng';
-    if (location.startsWith('/admin'))         return 'Dashboard';
-    return 'DocGen VN';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final items = _navItemsFor(isAdmin);
+    final idx = _getSelectedIndex(location, items);
+
     return switch (Responsive.of(context)) {
-      ScreenSize.desktop => _DesktopShell(shell: this),
-      ScreenSize.tablet  => _TabletShell(shell: this),
-      ScreenSize.mobile  => _MobileShell(shell: this),
+      ScreenSize.desktop => _DesktopShell(
+          child: child, isAdmin: isAdmin, items: items, idx: idx),
+      ScreenSize.tablet => _TabletShell(
+          child: child, isAdmin: isAdmin, items: items, idx: idx),
+      ScreenSize.mobile => _MobileShell(
+          child: child, isAdmin: isAdmin, items: items, idx: idx),
     };
   }
 }
 
-// Hàm bổ trợ để lấy index chính xác, ưu tiên đường dẫn dài hơn (specific path)
-int _getSelectedIndex(String location, List<(IconData, String, String)> items) {
-  int bestMatchIndex = 0;
-  int longestMatchLength = -1;
+// ── Desktop (Sidebar đầy đủ) ─────────────────────────────────────────────────
+class _DesktopShell extends StatelessWidget {
+  final Widget child;
+  final bool isAdmin;
+  final List<(IconData, String, String)> items;
+  final int idx;
 
-  for (int i = 0; i < items.length; i++) {
-    final path = items[i].$2;
-    if (location.startsWith(path) && path.length > longestMatchLength) {
-      longestMatchLength = path.length;
-      bestMatchIndex = i;
-    }
-  }
-  return bestMatchIndex;
-}
-
-class _DesktopShell extends ConsumerWidget {
-  final AppShell shell;
-  const _DesktopShell({required this.shell});
+  const _DesktopShell({
+    required this.child,
+    required this.isAdmin,
+    required this.items,
+    required this.idx,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final items = _navItemsFor(shell.isAdmin);
-    final idx = _getSelectedIndex(shell.location, items);
-
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
           SidebarNav(
             selectedIndex: idx,
-            isAdmin: shell.isAdmin,
+            isAdmin: isAdmin,
             collapsed: false,
             onItemTap: (i) => context.go(items[i].$2),
           ),
@@ -87,10 +106,10 @@ class _DesktopShell extends ConsumerWidget {
               children: [
                 TopBar(
                   selectedIndex: idx,
-                  isAdmin: shell.isAdmin,
+                  isAdmin: isAdmin,
                   showMenuButton: false,
                 ),
-                Expanded(child: shell.child),
+                Expanded(child: child),
               ],
             ),
           ),
@@ -100,32 +119,25 @@ class _DesktopShell extends ConsumerWidget {
   }
 }
 
-// Cập nhật _navItemsFor để đồng bộ với Sidebar và thêm nút Cài đặt cho Admin
-List<(IconData, String, String)> _navItemsFor(bool isAdmin) => isAdmin
-    ? [
-  (Icons.bar_chart_outlined, '/admin',         'Dashboard'),
-  (Icons.people_outline,     '/admin/users',   'Người dùng'),
-  (Icons.settings_outlined,  '/admin/profile', 'Cài đặt'), // Chuyển đến route của Admin
-]
-    : [
-  (Icons.bolt_outlined,      '/generate', 'Sinh tài liệu'),
-  (Icons.history_outlined,   '/history',  'Lịch sử'),
-  (Icons.person_outline,     '/profile',  'Cài đặt'),
-];
-
-// ── Tablet (NavigationRail) ────────────────────────────────────────────────────
+// ── Tablet (NavigationRail) ──────────────────────────────────────────────────
 class _TabletShell extends StatelessWidget {
-  final AppShell shell;
-  const _TabletShell({required this.shell});
+  final Widget child;
+  final bool isAdmin;
+  final List<(IconData, String, String)> items;
+  final int idx;
+
+  const _TabletShell({
+    required this.child,
+    required this.isAdmin,
+    required this.items,
+    required this.idx,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg     = isDark ? AppColors.cardDark  : AppColors.cardLight;
+    final bg = isDark ? AppColors.cardDark : AppColors.cardLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
-    final items  = _navItemsFor(shell.isAdmin);
-    int idx = items.indexWhere((i) => shell.location.startsWith(i.$2));
-    if (idx < 0) idx = 0;
 
     return Scaffold(
       body: Row(
@@ -148,10 +160,12 @@ class _TabletShell extends StatelessWidget {
                 size: 20,
               ),
               indicatorColor: AppColors.primarySoft,
-              destinations: items.map((item) => NavigationRailDestination(
+              destinations: items
+                  .map((item) => NavigationRailDestination(
                 icon: Icon(item.$1),
                 label: Text(item.$3),
-              )).toList(),
+              ))
+                  .toList(),
             ),
           ),
           Expanded(
@@ -159,10 +173,10 @@ class _TabletShell extends StatelessWidget {
               children: [
                 TopBar(
                   selectedIndex: idx,
-                  isAdmin: shell.isAdmin,
+                  isAdmin: isAdmin,
                   showMenuButton: false,
                 ),
-                Expanded(child: shell.child),
+                Expanded(child: child),
               ],
             ),
           ),
@@ -172,30 +186,35 @@ class _TabletShell extends StatelessWidget {
   }
 }
 
-// ── Mobile (BottomNav) ─────────────────────────────────────────────────────────
+// ── Mobile (BottomNav) ───────────────────────────────────────────────────────
 class _MobileShell extends StatelessWidget {
-  final AppShell shell;
-  const _MobileShell({required this.shell});
+  final Widget child;
+  final bool isAdmin;
+  final List<(IconData, String, String)> items;
+  final int idx;
+
+  const _MobileShell({
+    required this.child,
+    required this.isAdmin,
+    required this.items,
+    required this.idx,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final items  = _navItemsFor(shell.isAdmin);
-    int idx = items.indexWhere((i) => shell.location.startsWith(i.$2));
-    if (idx < 0) idx = 0;
-
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: TopBar(
           selectedIndex: idx,
-          isAdmin: shell.isAdmin,
+          isAdmin: isAdmin,
           showMenuButton: true,
         ),
       ),
-      body: shell.child,
+      body: child,
       bottomNavigationBar: DgBottomNavBar(
         selectedIndex: idx,
-        isAdmin: shell.isAdmin,
+        isAdmin: isAdmin,
         onTap: (i) => context.go(items[i].$2),
       ),
     );

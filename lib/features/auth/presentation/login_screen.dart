@@ -1,3 +1,4 @@
+// lib/features/auth/presentation/login_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // File chứa 3 màn hình: Login · Register · ForgotPassword
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,10 +99,16 @@ class _AuthLogo extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 1. LoginScreen (Đã xóa GitHub)
+// 1. LoginScreen
 // ════════════════════════════════════════════════════════════════════════════
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String redirectPath;
+
+  const LoginScreen({
+    super.key,
+    // Mặc định là /generate (dành cho app User)
+    this.redirectPath = '/generate',
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -134,16 +141,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _loading = true);
+    // Giả lập call API đăng nhập
     await Future.delayed(const Duration(milliseconds: 1200));
 
     if (!mounted) return;
     setState(() => _loading = false);
 
-    if (_emailCtrl.text == 'admin@docgen.vn') {
-      context.go('/admin');
-    } else {
-      context.go('/generate');
-    }
+    // Chuyển hướng tới đường dẫn được truyền từ Router
+    context.go(widget.redirectPath);
   }
 
   @override
