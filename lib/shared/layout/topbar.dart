@@ -6,7 +6,7 @@ import '../../core/tokens/app_colors.dart';
 import '../../core/tokens/app_typography.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/responsive.dart'; // Đã thêm import responsive để check mobile
+import '../../core/utils/responsive.dart';
 
 const _memberTitles = ['Sinh tài liệu', 'Lịch sử', 'Cài đặt'];
 const _adminTitles  = ['Dashboard', 'Người dùng', 'Cài đặt'];
@@ -31,8 +31,15 @@ class _TopBarState extends ConsumerState<TopBar> {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    final isDark     = ref.watch(themeModeProvider) == ThemeMode.dark;
-    final isMobile   = Responsive.isMobile(context); // Kiểm tra màn hình điện thoại
+    final themeMode  = ref.watch(themeModeProvider);
+    final isMobile   = Responsive.isMobile(context);
+
+    // XÁC ĐỊNH TRẠNG THÁI THỰC TẾ:
+    // Nếu là system -> lấy theo brightness của context.
+    // Nếu không -> lấy theo state của provider.
+    final bool isActuallyDark = themeMode == ThemeMode.system
+        ? brightness == Brightness.dark
+        : themeMode == ThemeMode.dark;
 
     final bg     = AppColors.card(brightness);
     final border = AppColors.border(brightness);
@@ -57,11 +64,9 @@ class _TopBarState extends ConsumerState<TopBar> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
-                      // NẾU LÀ MOBILE -> HIỆN LOGO, ẨN BREADCRUMB
                       if (isMobile)
                         const _AppLogo()
                       else ...[
-                        // NẾU LÀ DESKTOP/TABLET -> HIỆN BREADCRUMB
                         if (widget.showMenuButton)
                           IconButton(
                             icon: const Icon(Icons.menu, size: 20),
@@ -76,8 +81,9 @@ class _TopBarState extends ConsumerState<TopBar> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _TopBarIconBtn(
-                            icon: isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
-                            onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+                            // Hiển thị icon Mặt trời nếu App đang tối (để chuyển sang sáng) và ngược lại
+                            icon: isActuallyDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
+                            onTap: () => ref.read(themeModeProvider.notifier).toggle(isActuallyDark),
                             brightness: brightness,
                           ),
                           const SizedBox(width: 8),
@@ -97,7 +103,7 @@ class _TopBarState extends ConsumerState<TopBar> {
   }
 }
 
-// Thiết kế chuẩn cụm Logo giống y hệt Sidebar
+// ... (Giữ nguyên các widget _AppLogo, _TopBarAvatar, _Breadcrumb, _TopBarIconBtn bên dưới)
 class _AppLogo extends StatelessWidget {
   const _AppLogo();
 
