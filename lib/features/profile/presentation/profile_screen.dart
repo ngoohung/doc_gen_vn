@@ -1,5 +1,6 @@
 // lib/features/profile/presentation/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
@@ -10,7 +11,7 @@ import '../../../shared/widgets/dg_input.dart';
 import '../../../shared/widgets/dg_misc.dart';
 
 class ProfileScreen extends StatefulWidget {
-  // CÁCH CHUYÊN NGHIỆP: Nhận cờ cấu hình từ bên ngoài thay vì tự kiểm tra Router
+  // Nhận cờ cấu hình từ bên ngoài (Router)
   final bool showUsageStats;
   final String title;
 
@@ -30,13 +31,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _oldPassCtrl   = TextEditingController();
   final _newPassCtrl   = TextEditingController();
   final _confirmCtrl   = TextEditingController();
+
   bool _savingProfile  = false;
   bool _savingPassword = false;
 
   @override
   void dispose() {
-    _nameCtrl.dispose(); _emailCtrl.dispose();
-    _oldPassCtrl.dispose(); _newPassCtrl.dispose(); _confirmCtrl.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _oldPassCtrl.dispose();
+    _newPassCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
@@ -61,6 +66,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     DgToast.show(context, 'Đã đổi mật khẩu thành công', type: ToastType.success);
   }
 
+  // Hàm xử lý Đăng xuất
+  Future<void> _logout() async {
+    final confirmed = await DgConfirmDialog.show(
+      context,
+      title: 'Đăng xuất',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
+      confirmLabel: 'Đăng xuất',
+      destructive: true,
+    );
+    if (!confirmed) return;
+
+    // TODO: Xóa Token hoặc làm sạch SharedPreferences tại đây nếu cần
+
+    if (mounted) {
+      // Dùng go('/login') sẽ hoạt động chính xác cho cả luồng User và Admin
+      context.go('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -75,10 +99,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.title, style: AppTypography.h2.copyWith(color: fg)),
-            Text(
-              'Quản lý thông tin tài khoản',
-              style: AppTypography.body.copyWith(color: muted),
+            // ── Header với nút Đăng xuất ──────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.title, style: AppTypography.h2.copyWith(color: fg)),
+                      Text(
+                        'Quản lý thông tin tài khoản',
+                        style: AppTypography.body.copyWith(color: muted),
+                      ),
+                    ],
+                  ),
+                ),
+                DgButton.secondary(
+                  label: 'Đăng xuất',
+                  icon: Icons.logout,
+                  onPressed: _logout,
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.s6),
 
@@ -160,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.s4),
 
-            // ── Thống kê sử dụng (Hiển thị dựa theo tham số truyền vào) ──
+            // ── Thống kê sử dụng ──────────────────────────────────────
             if (widget.showUsageStats) ...[
               DgCard(
                 padding: const EdgeInsets.all(AppSpacing.s6),
@@ -180,8 +222,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Token đã sử dụng', style: AppTypography.body.copyWith(color: muted)),
-                        Text('12,480', style: AppTypography.bodyMedium.copyWith(color: fg)),
+                        // Đã sửa từ 'Token đã sử dụng' thành 'Tệp đã xử lý'
+                        Text('Tệp đã xử lý', style: AppTypography.body.copyWith(color: muted)),
+                        Text('15', style: AppTypography.bodyMedium.copyWith(color: fg)),
                       ],
                     ),
                   ],

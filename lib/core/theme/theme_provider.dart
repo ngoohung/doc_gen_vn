@@ -13,9 +13,17 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   void setDark()   => state = ThemeMode.dark;
   void setSystem() => state = ThemeMode.system;
 
-  /// Chuyển đổi light ↔ dark (dùng cho nút toggle trên TopBar)
-  void toggle() =>
+  /// Chuyển đổi thông minh: Nếu đang ở System, dựa vào độ sáng thực tế để nhảy sang chế độ ngược lại
+  /// currentIsDark: Trạng thái hiển thị thực tế (bao gồm cả chế độ hệ thống)
+  void toggle(bool currentIsDark) {
+    if (state == ThemeMode.system) {
+      // Nếu đang dùng hệ thống, ta ép sang chế độ thủ công ngược lại với hiện tại
+      state = currentIsDark ? ThemeMode.light : ThemeMode.dark;
+    } else {
+      // Nếu đã ở chế độ thủ công, chỉ cần đảo ngược
       state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    }
+  }
 
   bool get isDark => state == ThemeMode.dark;
 }
