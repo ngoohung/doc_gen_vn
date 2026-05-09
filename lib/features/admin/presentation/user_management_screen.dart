@@ -15,7 +15,7 @@ enum _UserStatus { active, locked }
 
 class _UserRow {
   final String id, name, email;
-  String role; // Bỏ final để có thể update vai trò
+  String role;
   final int docsCount, tokens;
   final DateTime joinedAt;
   _UserStatus status;
@@ -154,9 +154,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           Wrap(
             spacing: AppSpacing.s3,
             runSpacing: AppSpacing.s3,
+            crossAxisAlignment: WrapCrossAlignment.center, // Bắt buộc giữ dòng này để căn giữa trục ngang
             children: [
               SizedBox(
                 width: isWide ? 280 : double.infinity,
+                // Không dùng height ở đây
                 child: DgInput.search(hint: 'Tìm theo tên, email...', controller: _searchCtrl),
               ),
               _FilterChip(label: 'Tất cả', selected: _roleFilter == 'all', onTap: () { _roleFilter = 'all'; _filter(); }),
@@ -176,7 +178,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   if (isWide) _TableHeader(isDark: isDark, fg: fg, border: border),
                   Expanded(
                     child: _filtered.isEmpty
-                        ? DgEmptyState(icon: Icons.people_outline, message: 'Không tìm thấy người dùng')
+                        ? const DgEmptyState(icon: Icons.people_outline, message: 'Không tìm thấy người dùng')
                         : ListView.separated(
                       itemCount: _filtered.length,
                       separatorBuilder: (_, __) => Divider(height: 1, color: border),
@@ -186,7 +188,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         isDark: isDark,
                         fg: fg, muted: muted, border: border,
                         onToggleLock: () => _toggleLock(_filtered[i]),
-                        onToggleRole: () => _toggleRole(_filtered[i]), // Pass callback
+                        onToggleRole: () => _toggleRole(_filtered[i]),
                       ),
                     ),
                   ),
@@ -270,6 +272,7 @@ class _UserTableRowState extends State<_UserTableRow> {
         user: user, isDark: widget.isDark,
         fg: widget.fg, muted: widget.muted,
         onToggleLock: widget.onToggleLock,
+        onToggleRole: widget.onToggleRole, // Lỗi ở đây đã được sửa (truyền parameter)
       );
     }
 
@@ -313,7 +316,6 @@ class _UserTableRowState extends State<_UserTableRow> {
             ),
             const SizedBox(width: AppSpacing.s3),
 
-            // Cố định chiều rộng Badge là 72px để đảm bảo luôn bằng nhau
             SizedBox(
               width: 140,
               child: Row(
@@ -354,16 +356,20 @@ class _MobileUserRow extends StatelessWidget {
   final bool isDark;
   final Color fg, muted;
   final VoidCallback onToggleLock;
+  final VoidCallback onToggleRole;
 
   const _MobileUserRow({
     required this.user, required this.isDark,
     required this.fg, required this.muted,
     required this.onToggleLock,
+    required this.onToggleRole, // Đã bổ sung trong constructor
   });
 
   @override
   Widget build(BuildContext context) {
     final locked = user.status == _UserStatus.locked;
+    final isAdmin = user.role == 'admin';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: AppSpacing.s3),
       child: Row(
@@ -374,16 +380,53 @@ class _MobileUserRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.name, style: AppTypography.bodyMedium.copyWith(color: fg)),
+                Row(
+                  children: [
+                    Expanded(
+                        child: Text(
+                          user.name,
+                          style: AppTypography.bodyMedium.copyWith(color: fg),
+                          overflow: TextOverflow.ellipsis,
+                        )
+                    ),
+                    const SizedBox(width: 8),
+                    if (isAdmin) DgBadge.info(label: 'Admin') else DgBadge.neutral(label: 'User'),
+                    if (locked) ...[const SizedBox(width: 4), DgBadge.error(label: 'Khóa')]
+                  ],
+                ),
                 Text(user.email, style: AppTypography.caption.copyWith(color: muted)),
               ],
             ),
           ),
-          locked ? DgBadge.error(label: 'Khóa') : DgBadge.success(label: 'OK'),
-          const SizedBox(width: AppSpacing.s2),
-          DgButton.ghost(
-            label: locked ? 'Mở' : 'Khóa',
-            onPressed: onToggleLock,
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: muted),
+            onSelected: (val) {
+              if (val == 'role') onToggleRole();
+              if (val == 'lock') onToggleLock();
+            },
+            color: isDark ? AppColors.cardDark : AppColors.cardLight,
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'role',
+                child: Row(
+                  children: [
+                    const Icon(Icons.swap_horiz, size: 18),
+                    const SizedBox(width: 8),
+                    Text(isAdmin ? 'Hạ quyền xuống User' : 'Nâng cấp lên Admin', style: AppTypography.body),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'lock',
+                child: Row(
+                  children: [
+                    Icon(locked ? Icons.lock_open : Icons.lock_outline, size: 18, color: locked ? AppColors.success : AppColors.error),
+                    const SizedBox(width: 8),
+                    Text(locked ? 'Mở khóa tài khoản' : 'Khóa tài khoản', style: AppTypography.body.copyWith(color: locked ? AppColors.success : AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -426,17 +469,20 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        // Tuyệt chiêu ở đây: Dùng padding dọc 12px để chiều cao tự động nở ra đúng 43px
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: selected ? c.withOpacity(0.1) : Colors.transparent,
           border: Border.all(color: selected ? c : AppColors.borderLight),
           borderRadius: BorderRadius.circular(6),
         ),
+        // Trả lại child đơn giản là Text, không cần bọc Column hay gì khác
         child: Text(
           label,
           style: AppTypography.caption.copyWith(
             color: selected ? c : AppColors.fgSubtleLight,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            height: 1.4, // Đảm bảo cố định line-height
           ),
         ),
       ),

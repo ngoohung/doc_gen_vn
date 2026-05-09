@@ -1,5 +1,7 @@
+// lib/features/admin/presentation/dashboard_screen.dart
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
@@ -7,21 +9,79 @@ import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../shared/widgets/dg_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+// ── Định nghĩa các Models ở ngoài cùng để tránh lỗi Scope ──
+class _Stat {
+  final String label, value, delta;
+  final IconData icon;
+  final bool isPositive;
+  const _Stat({required this.label, required this.value, required this.icon, required this.delta, required this.isPositive});
+}
+
+class _PieItem {
+  final String label;
+  final double value;
+  final Color color;
+  const _PieItem(this.label, this.value, this.color);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  String _selectedPeriod = 'Tuần này';
+  DateTimeRange? _customDateRange;
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(primary: AppColors.primary)
+                : const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedPeriod = 'Tùy chỉnh';
+        _customDateRange = picked;
+      });
+    }
+  }
+
+  String get _periodLabel {
+    if (_selectedPeriod == 'Tùy chỉnh' && _customDateRange != null) {
+      final start = DateFormat('dd/MM').format(_customDateRange!.start);
+      final end = DateFormat('dd/MM').format(_customDateRange!.end);
+      return '$start - $end';
+    }
+    return _selectedPeriod;
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
-    final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
-    final cols   = Responsive.isDesktop(context) ? 3 : (Responsive.isTablet(context) ? 2 : 1);
+    final fg = isDark ? AppColors.fgDark : AppColors.fgLight;
+    final muted = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
+    final isDesktop = Responsive.isDesktop(context);
+    final isMobile = Responsive.isMobile(context);
 
-    // Đã xóa phần Tokens
     final stats = [
-      _Stat(label: 'Tổng người dùng', value: '1,248', icon: Icons.people_outline, delta: '+12%'),
-      _Stat(label: 'Tài liệu đã tạo', value: '8,432', icon: Icons.description_outlined, delta: '+24%'),
-      _Stat(label: 'Yêu cầu hôm nay', value: '342',   icon: Icons.bolt_outlined, delta: '+8%'),
+      const _Stat(label: 'Tổng người dùng', value: '1,248', icon: Icons.people_outline, delta: '+12%', isPositive: true),
+      const _Stat(label: 'Tài liệu đã tạo', value: '8,432', icon: Icons.description_outlined, delta: '+24%', isPositive: true),
+      const _Stat(label: 'Yêu cầu xử lý', value: '342', icon: Icons.bolt_outlined, delta: '-5%', isPositive: false),
     ];
 
     return SingleChildScrollView(
@@ -29,55 +89,105 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Dashboard', style: AppTypography.h2.copyWith(color: fg)),
-          Text(
-            'Tổng quan hệ thống',
-            style: AppTypography.body.copyWith(color: muted),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dashboard', style: AppTypography.h2.copyWith(color: fg)),
+                    Text('Tổng quan hệ thống', style: AppTypography.body.copyWith(color: muted)),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (val) {
+                  if (val == 'Tùy chỉnh') {
+                    _pickDateRange();
+                  } else {
+                    setState(() {
+                      _selectedPeriod = val;
+                      _customDateRange = null;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 16, color: muted),
+                      const SizedBox(width: 8),
+                      Text(_periodLabel, style: AppTypography.bodyMedium.copyWith(color: fg)),
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down, size: 16, color: muted),
+                    ],
+                  ),
+                ),
+                itemBuilder: (context) => [
+                  'Hôm nay', 'Tuần này', 'Tháng này', 'Năm nay', 'Tùy chỉnh'
+                ].map((e) => PopupMenuItem(value: e, child: Text(e))).toList(),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.s6),
 
-          GridView.count(
-            crossAxisCount: cols,
-            crossAxisSpacing: AppSpacing.s3,
-            mainAxisSpacing: AppSpacing.s3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: Responsive.isMobile(context) ? 2.0 : 2.5,
-            children: stats.map((s) => _StatCard(stat: s, isDark: isDark, fg: fg, muted: muted)).toList(),
-          ),
+          if (isMobile)
+            Column(
+              children: stats.map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+                child: _StatCard(stat: s, isDark: isDark, fg: fg, muted: muted),
+              )).toList(),
+            )
+          else
+            GridView.count(
+              crossAxisCount: isDesktop ? 3 : 2,
+              crossAxisSpacing: AppSpacing.s4,
+              mainAxisSpacing: AppSpacing.s4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 2.2,
+              children: stats.map((s) => _StatCard(stat: s, isDark: isDark, fg: fg, muted: muted)).toList(),
+            ),
+
+          const SizedBox(height: AppSpacing.s4),
+          _SuccessRateCard(isDark: isDark, fg: fg, muted: muted),
           const SizedBox(height: AppSpacing.s6),
 
-          // Giữ nguyên phần Charts
-          Responsive.isDesktop(context)
-              ? Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 3, child: _LineChartCard(isDark: isDark, fg: fg, muted: muted)),
-              const SizedBox(width: AppSpacing.s4),
-              Expanded(flex: 2, child: _PieChartCard(isDark: isDark, fg: fg, muted: muted)),
-            ],
-          )
-              : Column(
-            children: [
-              _LineChartCard(isDark: isDark, fg: fg, muted: muted),
-              const SizedBox(height: AppSpacing.s4),
-              _PieChartCard(isDark: isDark, fg: fg, muted: muted),
-            ],
-          ),
+          if (isDesktop)
+            SizedBox(
+              height: 380,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 3, child: _LineChartCard(isDark: isDark, fg: fg, muted: muted)),
+                  const SizedBox(width: AppSpacing.s4),
+                  Expanded(flex: 2, child: _PieChartCard(isDark: isDark, fg: fg, muted: muted)),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: [
+                SizedBox(height: 340, child: _LineChartCard(isDark: isDark, fg: fg, muted: muted)),
+                const SizedBox(height: AppSpacing.s4),
+                SizedBox(height: 360, child: _PieChartCard(isDark: isDark, fg: fg, muted: muted)),
+              ],
+            ),
         ],
       ),
     );
   }
 }
 
-// ─── Stat model ───────────────────────────────────────────────────────────────
-class _Stat {
-  final String label, value, delta;
-  final IconData icon;
-  const _Stat({required this.label, required this.value, required this.icon, required this.delta});
-}
+// ── Các Component ──
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final _Stat stat;
   final bool isDark;
@@ -87,40 +197,42 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final deltaColor = stat.isPositive ? AppColors.success : AppColors.error;
+    final deltaBg = stat.isPositive ? AppColors.successSoft : AppColors.errorSoft;
+
     return DgCard(
-      padding: const EdgeInsets.all(AppSpacing.s4),
+      padding: const EdgeInsets.all(AppSpacing.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(stat.label, style: AppTypography.caption.copyWith(color: muted)),
-              Icon(stat.icon, size: 16, color: AppColors.primary),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(8)),
+                child: Icon(stat.icon, size: 20, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(stat.label, style: AppTypography.bodyMedium.copyWith(color: muted)),
+              ),
             ],
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          const SizedBox(height: AppSpacing.s4),
+          Text(stat.value, style: AppTypography.h1.copyWith(color: fg, fontSize: 36)),
+          const SizedBox(height: 8),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
             children: [
-              Text(
-                stat.value,
-                style: AppTypography.h3.copyWith(color: fg),
-              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.successSoft,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  stat.delta,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.success, fontWeight: FontWeight.w600,
-                  ),
-                ),
+                decoration: BoxDecoration(color: deltaBg, borderRadius: BorderRadius.circular(4)),
+                child: Text(stat.delta, style: AppTypography.caption.copyWith(color: deltaColor, fontWeight: FontWeight.w600)),
               ),
+              Text('so với kỳ trước', style: AppTypography.caption.copyWith(color: muted)),
             ],
           ),
         ],
@@ -129,133 +241,116 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── Line chart card ──────────────────────────────────────────────────────────
-class _LineChartCard extends StatefulWidget {
+class _SuccessRateCard extends StatelessWidget {
   final bool isDark;
   final Color fg, muted;
-  const _LineChartCard({required this.isDark, required this.fg, required this.muted});
-
-  @override
-  State<_LineChartCard> createState() => _LineChartCardState();
-}
-
-class _LineChartCardState extends State<_LineChartCard> {
-  // TODO: dữ liệu thực từ API GET /admin/stats/requests?period=week
-  final _data = const [42.0, 68.0, 55.0, 89.0, 120.0, 98.0, 145.0];
-  final _labels = const ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-  String _period = 'week';
+  const _SuccessRateCard({required this.isDark, required this.fg, required this.muted});
 
   @override
   Widget build(BuildContext context) {
-    final border = widget.isDark ? AppColors.borderDark : AppColors.borderLight;
-    final gridColor = widget.isDark
-        ? AppColors.borderDark
-        : const Color(0xFFF3F4F6);
+    const double successRate = 0.94;
+    const double failRate = 1.0 - successRate;
 
     return DgCard(
       padding: const EdgeInsets.all(AppSpacing.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('Tỷ lệ sinh tài liệu thành công', style: AppTypography.h4.copyWith(color: fg)),
+          const SizedBox(height: AppSpacing.s4),
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'Yêu cầu sinh tài liệu',
-                  style: AppTypography.h4.copyWith(color: widget.fg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Thành công', style: AppTypography.caption.copyWith(color: muted)),
+                    Text('${(successRate * 100).toInt()}%', style: AppTypography.h3.copyWith(color: AppColors.success)),
+                  ],
                 ),
               ),
-              // Period selector
-              for (final p in [('week', 'Tuần'), ('month', 'Tháng'), ('year', 'Năm')])
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _period = p.$1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _period == p.$1 ? AppColors.primarySoft : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        p.$2,
-                        style: AppTypography.caption.copyWith(
-                          color: _period == p.$1 ? AppColors.primary : widget.muted,
-                          fontWeight: _period == p.$1 ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Thất bại', style: AppTypography.caption.copyWith(color: muted)),
+                    Text('${(failRate * 100).toInt()}%', style: AppTypography.h3.copyWith(color: AppColors.error)),
+                  ],
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.s5),
-          SizedBox(
-            height: 200,
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Expanded(flex: (successRate * 100).toInt(), child: Container(height: 8, color: AppColors.success)),
+                Expanded(flex: (failRate * 100).toInt(), child: Container(height: 8, color: AppColors.error)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LineChartCard extends StatelessWidget {
+  final bool isDark;
+  final Color fg, muted;
+  const _LineChartCard({required this.isDark, required this.fg, required this.muted});
+
+  @override
+  Widget build(BuildContext context) {
+    final gridColor = isDark ? AppColors.borderDark : const Color(0xFFF3F4F6);
+    final data = const [42.0, 68.0, 55.0, 89.0, 120.0, 98.0, 145.0];
+    final labels = const ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+    return DgCard(
+      padding: const EdgeInsets.all(AppSpacing.s5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Yêu cầu sinh tài liệu', style: AppTypography.h4.copyWith(color: fg)),
+          const SizedBox(height: AppSpacing.s6),
+          Expanded(
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 40,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: gridColor, strokeWidth: 1,
-                  ),
+                  show: true, drawVerticalLine: false, horizontalInterval: 40,
+                  getDrawingHorizontalLine: (_) => FlLine(color: gridColor, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 1,
-                      getTitlesWidget: (v, _) {
-                        final i = v.toInt();
-                        if (i < 0 || i >= _labels.length) return const SizedBox();
-                        return Text(
-                          _labels[i],
-                          style: AppTypography.caption.copyWith(color: widget.muted),
-                        );
-                      },
+                      showTitles: true, interval: 1,
+                      getTitlesWidget: (v, _) => Text(
+                        v.toInt() >= 0 && v.toInt() < labels.length ? labels[v.toInt()] : '',
+                        style: AppTypography.caption.copyWith(color: muted),
+                      ),
                     ),
                   ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 40,
-                      reservedSize: 36,
-                      getTitlesWidget: (v, _) => Text(
-                        v.toInt().toString(),
-                        style: AppTypography.caption.copyWith(color: widget.muted),
-                      ),
+                      showTitles: true, interval: 40, reservedSize: 36,
+                      getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: AppTypography.caption.copyWith(color: muted)),
                     ),
                   ),
-                  topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: _data.asMap().entries
-                        .map((e) => FlSpot(e.key.toDouble(), e.value))
-                        .toList(),
-                    isCurved: true,
-                    color: AppColors.primary,
-                    barWidth: 2,
-                    dotData: FlDotData(
-                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
-                        radius: 3,
-                        color: AppColors.primary,
-                        strokeWidth: 0,
-                      ),
-                    ),
+                    spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                    isCurved: true, color: AppColors.primary, barWidth: 2,
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.primary.withOpacity(0.15),
-                          AppColors.primary.withOpacity(0.0),
-                        ],
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        colors: [AppColors.primary.withOpacity(0.2), Colors.transparent],
                       ),
                     ),
                   ),
@@ -270,7 +365,6 @@ class _LineChartCardState extends State<_LineChartCard> {
   }
 }
 
-// ─── Pie chart card ───────────────────────────────────────────────────────────
 class _PieChartCard extends StatefulWidget {
   final bool isDark;
   final Color fg, muted;
@@ -283,14 +377,14 @@ class _PieChartCard extends StatefulWidget {
 class _PieChartCardState extends State<_PieChartCard> {
   int _touched = -1;
 
-  // TODO: dữ liệu thực từ API GET /admin/stats/languages
-  final _items = const [
-    _PieItem('TypeScript', 28.0, AppColors.primary),
-    _PieItem('Python',     22.0, Color(0xFF22C55E)),
-    _PieItem('JavaScript', 18.0, Color(0xFFF59E0B)),
-    _PieItem('Java',       14.0, Color(0xFFEF4444)),
-    _PieItem('Go',          10.0, Color(0xFF3B82F6)),
-    _PieItem('Khác',        8.0,  Color(0xFF94A3B8)),
+  // Đã gán rõ kiểu dữ liệu List<_PieItem> để trình biên dịch hiểu
+  final List<_PieItem> _items = const [
+    _PieItem('Python',     35.0, Color(0xFF3B82F6)),
+    _PieItem('JavaScript', 25.0, Color(0xFFF59E0B)),
+    _PieItem('TypeScript', 15.0, Color(0xFF4F46E5)),
+    _PieItem('Java',       10.0, Color(0xFFEF4444)),
+    _PieItem('C++',        8.0,  Color(0xFF8B5CF6)),
+    _PieItem('Rust',       7.0,  Color(0xFF10B981)),
   ];
 
   @override
@@ -300,13 +394,9 @@ class _PieChartCardState extends State<_PieChartCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Ngôn ngữ phổ biến',
-            style: AppTypography.h4.copyWith(color: widget.fg),
-          ),
-          const SizedBox(height: AppSpacing.s5),
-          SizedBox(
-            height: 180,
+          Text('Ngôn ngữ phổ biến', style: AppTypography.h4.copyWith(color: widget.fg)),
+          const SizedBox(height: AppSpacing.s6),
+          Expanded(
             child: PieChart(
               PieChartData(
                 pieTouchData: PieTouchData(
@@ -319,12 +409,10 @@ class _PieChartCardState extends State<_PieChartCard> {
                   return PieChartSectionData(
                     value: e.value.value,
                     color: e.value.color,
-                    radius: isTouched ? 60 : 50,
+                    radius: isTouched ? 65 : 55,
                     title: '${e.value.value.toInt()}%',
-                    titleStyle: AppTypography.caption.copyWith(
-                      color: Colors.white, fontWeight: FontWeight.w600,
-                    ),
-                    showTitle: isTouched || e.value.value >= 15,
+                    titleStyle: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                    showTitle: isTouched || e.value.value >= 10,
                   );
                 }).toList(),
                 sectionsSpace: 2,
@@ -332,32 +420,24 @@ class _PieChartCardState extends State<_PieChartCard> {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.s4),
-          // Legend
-          Wrap(
-            spacing: AppSpacing.s3,
-            runSpacing: AppSpacing.s2,
-            children: _items.map((item) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8, height: 8,
-                  decoration: BoxDecoration(color: item.color, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 5),
-                Text(item.label, style: AppTypography.caption.copyWith(color: widget.muted)),
-              ],
-            )).toList(),
+          const SizedBox(height: AppSpacing.s6),
+          Center(
+            child: Wrap(
+              spacing: AppSpacing.s4,
+              runSpacing: AppSpacing.s2,
+              alignment: WrapAlignment.center,
+              children: _items.map((item) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 10, height: 10, decoration: BoxDecoration(color: item.color, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(item.label, style: AppTypography.caption.copyWith(color: widget.muted)),
+                ],
+              )).toList(),
+            ),
           ),
         ],
       ),
     );
   }
-}
-
-class _PieItem {
-  final String label;
-  final double value;
-  final Color color;
-  const _PieItem(this.label, this.value, this.color);
 }

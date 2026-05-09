@@ -1,6 +1,5 @@
 // lib/features/profile/presentation/profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
@@ -11,7 +10,15 @@ import '../../../shared/widgets/dg_input.dart';
 import '../../../shared/widgets/dg_misc.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  // CÁCH CHUYÊN NGHIỆP: Nhận cờ cấu hình từ bên ngoài thay vì tự kiểm tra Router
+  final bool showUsageStats;
+  final String title;
+
+  const ProfileScreen({
+    super.key,
+    this.showUsageStats = true,
+    this.title = 'Cài đặt',
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -36,7 +43,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     setState(() => _savingProfile = true);
     await Future.delayed(const Duration(milliseconds: 900));
-    // TODO: gọi API PATCH /users/me  { name: _nameCtrl.text }
     if (!mounted) return;
     setState(() => _savingProfile = false);
     DgToast.show(context, 'Đã cập nhật thông tin', type: ToastType.success);
@@ -49,7 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     setState(() => _savingPassword = true);
     await Future.delayed(const Duration(milliseconds: 900));
-    // TODO: gọi API POST /auth/change-password { old: _oldPassCtrl.text, new: _newPassCtrl.text }
     if (!mounted) return;
     setState(() => _savingPassword = false);
     _oldPassCtrl.clear(); _newPassCtrl.clear(); _confirmCtrl.clear();
@@ -58,9 +63,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Kiểm tra xem có đang ở route admin không
-    final isAdminView = GoRouterState.of(context).matchedLocation.startsWith('/admin');
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fg     = isDark ? AppColors.fgDark     : AppColors.fgLight;
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
@@ -73,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cài đặt', style: AppTypography.h2.copyWith(color: fg)),
+            Text(widget.title, style: AppTypography.h2.copyWith(color: fg)),
             Text(
               'Quản lý thông tin tài khoản',
               style: AppTypography.body.copyWith(color: muted),
@@ -86,74 +88,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Thông tin cá nhân',
-                    style: AppTypography.h4.copyWith(color: fg),
-                  ),
+                  Text('Thông tin cá nhân', style: AppTypography.h4.copyWith(color: fg)),
                   const SizedBox(height: AppSpacing.s5),
-
-                  // Avatar row
                   Row(
                     children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 64, height: 64,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'N',
-                                style: TextStyle(
-                                  fontFamily: 'Inter', fontSize: 24,
-                                  fontWeight: FontWeight.w700, color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0, right: 0,
-                            child: GestureDetector(
-                              // TODO: FilePicker để chọn avatar, upload lên /users/me/avatar
-                              onTap: () => DgToast.show(
-                                context,
-                                'Tính năng đổi avatar đang phát triển',
-                                type: ToastType.info,
-                              ),
-                              child: Container(
-                                width: 22, height: 22,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? AppColors.cardDark
-                                        : AppColors.cardLight,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt, size: 11, color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      Container(
+                        width: 64, height: 64,
+                        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                        child: const Center(
+                          child: Text('N', style: TextStyle(fontFamily: 'Inter', fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.s4),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _nameCtrl.text,
-                            style: AppTypography.bodySemibold.copyWith(color: fg),
-                          ),
-                          Text(
-                            _emailCtrl.text,
-                            style: AppTypography.caption.copyWith(color: muted),
-                          ),
+                          Text(_nameCtrl.text, style: AppTypography.bodySemibold.copyWith(color: fg)),
+                          Text(_emailCtrl.text, style: AppTypography.caption.copyWith(color: muted)),
                         ],
                       ),
                     ],
@@ -162,19 +113,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Divider(color: border),
                   const SizedBox(height: AppSpacing.s5),
 
-                  DgInput(
-                    label: 'Họ và tên',
-                    controller: _nameCtrl,
-                    prefixIcon: Icons.person_outline,
-                  ),
+                  DgInput(label: 'Họ và tên', controller: _nameCtrl, prefixIcon: Icons.person_outline),
                   const SizedBox(height: AppSpacing.s4),
                   DgInput(
-                    label: 'Email',
-                    controller: _emailCtrl,
-                    readOnly: true,
-                    // Email không thể đổi
-                    helperText: 'Email không thể thay đổi',
-                    prefixIcon: Icons.mail_outline,
+                    label: 'Email', controller: _emailCtrl, readOnly: true,
+                    helperText: 'Email không thể thay đổi', prefixIcon: Icons.mail_outline,
                   ),
                   const SizedBox(height: AppSpacing.s5),
                   Align(
@@ -198,24 +141,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text('Đổi mật khẩu', style: AppTypography.h4.copyWith(color: fg)),
                   const SizedBox(height: AppSpacing.s5),
-                  DgInput.password(
-                    label: 'Mật khẩu hiện tại',
-                    controller: _oldPassCtrl,
-                    textInputAction: TextInputAction.next,
-                  ),
+                  DgInput.password(label: 'Mật khẩu hiện tại', controller: _oldPassCtrl, textInputAction: TextInputAction.next),
                   const SizedBox(height: AppSpacing.s4),
-                  DgInput.password(
-                    label: 'Mật khẩu mới',
-                    hint: 'Ít nhất 8 ký tự',
-                    controller: _newPassCtrl,
-                    textInputAction: TextInputAction.next,
-                  ),
+                  DgInput.password(label: 'Mật khẩu mới', hint: 'Ít nhất 8 ký tự', controller: _newPassCtrl, textInputAction: TextInputAction.next),
                   const SizedBox(height: AppSpacing.s4),
-                  DgInput.password(
-                    label: 'Xác nhận mật khẩu mới',
-                    controller: _confirmCtrl,
-                    textInputAction: TextInputAction.done,
-                  ),
+                  DgInput.password(label: 'Xác nhận mật khẩu mới', controller: _confirmCtrl, textInputAction: TextInputAction.done),
                   const SizedBox(height: AppSpacing.s5),
                   Align(
                     alignment: Alignment.centerRight,
@@ -230,8 +160,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.s4),
 
-            // ── Usage stats card (Chỉ hiện nếu không phải Admin view) ──
-            if (!isAdminView) ...[
+            // ── Thống kê sử dụng (Hiển thị dựa theo tham số truyền vào) ──
+            if (widget.showUsageStats) ...[
               DgCard(
                 padding: const EdgeInsets.all(AppSpacing.s6),
                 child: Column(
@@ -239,9 +169,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text('Thống kê sử dụng', style: AppTypography.h4.copyWith(color: fg)),
                     const SizedBox(height: AppSpacing.s4),
-                    _StatRow(label: 'Tài liệu đã tạo', value: '24', muted: muted, fg: fg),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Tài liệu đã tạo', style: AppTypography.body.copyWith(color: muted)),
+                        Text('24', style: AppTypography.bodyMedium.copyWith(color: fg)),
+                      ],
+                    ),
                     Divider(height: AppSpacing.s4, color: border),
-                    _StatRow(label: 'Tệp đã xử lý', value: '38', muted: muted, fg: fg),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Token đã sử dụng', style: AppTypography.body.copyWith(color: muted)),
+                        Text('12,480', style: AppTypography.bodyMedium.copyWith(color: fg)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -255,33 +197,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Vùng nguy hiểm',
-                    style: AppTypography.h4.copyWith(color: AppColors.error),
-                  ),
+                  Text('Vùng nguy hiểm', style: AppTypography.h4.copyWith(color: AppColors.error)),
                   const SizedBox(height: AppSpacing.s2),
-                  Text(
-                    'Xóa tài khoản sẽ xóa toàn bộ dữ liệu và không thể khôi phục.',
-                    style: AppTypography.body.copyWith(color: muted),
-                  ),
+                  Text('Xóa tài khoản sẽ xóa toàn bộ dữ liệu và không thể khôi phục.', style: AppTypography.body.copyWith(color: muted)),
                   const SizedBox(height: AppSpacing.s4),
                   DgButton.destructive(
                     label: 'Xóa tài khoản',
                     icon: Icons.delete_forever_outlined,
-                    onPressed: () async {
-                      final ok = await DgConfirmDialog.show(
-                        context,
-                        title: 'Xóa tài khoản',
-                        message:
-                        'Toàn bộ tài liệu và dữ liệu sẽ bị xóa vĩnh viễn. Bạn có chắc không?',
-                        confirmLabel: 'Xóa tài khoản',
-                        destructive: true,
-                      );
-                      if (ok && mounted) {
-                        // TODO: gọi API DELETE /users/me → logout → về landing
-                        DgToast.show(context, 'Tính năng đang phát triển', type: ToastType.info);
-                      }
-                    },
+                    onPressed: () => DgToast.show(context, 'Tính năng đang phát triển', type: ToastType.info),
                   ),
                 ],
               ),
@@ -289,32 +212,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color muted;
-  final Color fg;
-
-  const _StatRow({
-    required this.label, required this.value,
-    required this.muted, required this.fg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.body.copyWith(color: muted)),
-        Text(
-          value,
-          style: AppTypography.bodyMedium.copyWith(color: fg),
-        ),
-      ],
     );
   }
 }
