@@ -1,16 +1,20 @@
 // lib/features/auth/presentation/login_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // File chứa 3 màn hình: Login · Register · ForgotPassword
+// Đã kết nối API backend thực tế.
 // ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_provider.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../shared/widgets/dg_button.dart';
 import '../../../shared/widgets/dg_input.dart';
 import '../../../shared/widgets/dg_misc.dart';
+import '../data/auth_repository.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Shared auth layout wrapper
@@ -101,24 +105,24 @@ class _AuthLogo extends StatelessWidget {
 // ════════════════════════════════════════════════════════════════════════════
 // 1. LoginScreen
 // ════════════════════════════════════════════════════════════════════════════
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   final String redirectPath;
+  final bool requireAdmin;
 
   const LoginScreen({
     super.key,
-    // Mặc định là /generate (dành cho app User)
     this.redirectPath = '/generate',
+    this.requireAdmin = false,
   });
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey   = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
-  bool _loading    = false;
   String? _emailError;
   String? _passError;
 
@@ -131,23 +135,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     setState(() { _emailError = null; _passError = null; });
-    if (_emailCtrl.text.isEmpty) {
+
+    final email = _emailCtrl.text.trim();
+    final pass  = _passCtrl.text;
+
+    if (email.isEmpty) {
       setState(() => _emailError = 'Vui lòng nhập email');
       return;
     }
-    if (_passCtrl.text.isEmpty) {
+    if (pass.isEmpty) {
       setState(() => _passError = 'Vui lòng nhập mật khẩu');
       return;
     }
 
-    setState(() => _loading = true);
-    // Giả lập call API đăng nhập
-    await Future.delayed(const Duration(milliseconds: 1200));
+    final ok = await ref.read(authProvider.notifier).login(email, pass);
 
     if (!mounted) return;
-    setState(() => _loading = false);
 
-    // Chuyển hướng tới đường dẫn được truyền từ Router
+    if (!ok) {
+      final err = ref.read(authProvider).error ?? 'Đăng nhập thất bại';
+      DgToast.show(context, err, type: ToastType.error);
+      return;
+    }
+
+    final user = ref.read(authProvider).user;
+
+    // Xử lý kiểm tra tài khoản đã kích hoạt (Verify OTP)
+    if (user != null && !user.isActive) {
+      context.push('/verify-otp', extra: email);
+      return;
+    }
+
+    // Nếu màn hình login đang ở app Admin mà tài khoản không phải admin → từ chối
+    if (widget.requireAdmin && user != null && !user.isAdmin) {
+      await ref.read(authProvider.notifier).logout();
+      if (mounted) {
+        DgToast.show(
+          context,
+          'Tài khoản này không có quyền truy cập trang Admin',
+          type: ToastType.error,
+        );
+      }
+      return;
+    }
+
+    DgToast.show(context, 'Đăng nhập thành công', type: ToastType.success);
     context.go(widget.redirectPath);
   }
 
@@ -155,6 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
+    final loading = ref.watch(authProvider).loading;
 
     return _AuthShell(
       child: Form(
@@ -165,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const _AuthLogo(),
             const SizedBox(height: AppSpacing.s6),
             Text(
-              'Đăng nhập',
+              widget.requireAdmin ? 'Đăng nhập Admin' : 'Đăng nhập',
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
@@ -213,30 +246,31 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: AppSpacing.s5),
 
             DgButton.primary(
-              label: _loading ? 'Đang đăng nhập...' : 'Đăng nhập',
-              loading: _loading,
+              label: loading ? 'Đang đăng nhập...' : 'Đăng nhập',
+              loading: loading,
               fullWidth: true,
-              onPressed: _loading ? null : _login,
+              onPressed: loading ? null : _login,
             ),
 
             const SizedBox(height: AppSpacing.s6),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Chưa có tài khoản? ', style: AppTypography.bodySmall.copyWith(color: muted)),
-                GestureDetector(
-                  onTap: () => context.push('/login/register'),
-                  child: Text(
-                    'Đăng ký',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+            if (!widget.requireAdmin)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Chưa có tài khoản? ', style: AppTypography.bodySmall.copyWith(color: muted)),
+                  GestureDetector(
+                    onTap: () => context.push('/login/register'),
+                    child: Text(
+                      'Đăng ký',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
@@ -247,19 +281,18 @@ class _LoginScreenState extends State<LoginScreen> {
 // ════════════════════════════════════════════════════════════════════════════
 // 2. RegisterScreen
 // ════════════════════════════════════════════════════════════════════════════
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
   final _pass2Ctrl = TextEditingController();
-  bool _loading    = false;
 
   @override
   void dispose() {
@@ -269,22 +302,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    if (_passCtrl.text != _pass2Ctrl.text) {
+    final email = _emailCtrl.text.trim();
+    final pass  = _passCtrl.text;
+    final pass2 = _pass2Ctrl.text;
+    final name  = _nameCtrl.text.trim();
+
+    if (email.isEmpty || pass.isEmpty) {
+      DgToast.show(context, 'Vui lòng nhập đầy đủ email và mật khẩu', type: ToastType.warning);
+      return;
+    }
+    if (pass.length < 6) {
+      DgToast.show(context, 'Mật khẩu phải có ít nhất 6 ký tự', type: ToastType.warning);
+      return;
+    }
+    if (pass != pass2) {
       DgToast.show(context, 'Mật khẩu không khớp', type: ToastType.error);
       return;
     }
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1400));
+
+    final ok = await ref.read(authProvider.notifier).register(
+      email: email,
+      password: pass,
+      fullName: name.isEmpty ? null : name,
+    );
+
     if (!mounted) return;
-    setState(() => _loading = false);
-    DgToast.show(context, 'Đăng ký thành công! Vui lòng đăng nhập.', type: ToastType.success);
-    context.go('/login');
+
+    if (!ok) {
+      final err = ref.read(authProvider).error ?? 'Đăng ký thất bại';
+      DgToast.show(context, err, type: ToastType.error);
+      return;
+    }
+
+    DgToast.show(
+      context,
+      'Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.',
+      type: ToastType.success,
+    );
+    // Chuyển sang màn xác thực OTP, truyền email theo
+    context.push('/verify-otp', extra: _emailCtrl.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted  = isDark ? AppColors.fgMutedDark : AppColors.fgMutedLight;
+    final loading = ref.watch(authProvider).loading;
 
     return _AuthShell(
       child: Column(
@@ -330,10 +393,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: AppSpacing.s6),
 
           DgButton.primary(
-            label: _loading ? 'Đang tạo tài khoản...' : 'Đăng ký',
-            loading: _loading,
+            label: loading ? 'Đang tạo tài khoản...' : 'Đăng ký',
+            loading: loading,
             fullWidth: true,
-            onPressed: _loading ? null : _register,
+            onPressed: loading ? null : _register,
           ),
           const SizedBox(height: AppSpacing.s5),
 
@@ -359,19 +422,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 3. ForgotPasswordScreen
+// 3. ForgotPasswordScreen — gọi API /forgot-password, sau đó sang reset
 // ════════════════════════════════════════════════════════════════════════════
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _emailCtrl = TextEditingController();
   bool _loading    = false;
-  bool _sent       = false;
 
   @override
   void dispose() {
@@ -380,11 +442,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _send() async {
-    if (_emailCtrl.text.isEmpty) return;
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      DgToast.show(context, 'Vui lòng nhập email', type: ToastType.warning);
+      return;
+    }
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1000));
-    if (!mounted) return;
-    setState(() { _loading = false; _sent = true; });
+    try {
+      await ref.read(authRepoProvider).forgotPassword(email);
+      if (!mounted) return;
+      DgToast.show(
+        context,
+        'Mã OTP đã được gửi tới email của bạn',
+        type: ToastType.success,
+      );
+      // Chuyển sang màn đặt lại mật khẩu, truyền email theo
+      context.push('/reset-password', extra: email);
+    } catch (e) {
+      if (!mounted) return;
+      DgToast.show(context, e.toString(), type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -399,55 +478,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const _AuthLogo(),
           const SizedBox(height: AppSpacing.s6),
           Text(
-            'Khôi phục mật khẩu',
+            'Quên mật khẩu',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.s2),
           Text(
-            'Nhập email để nhận link đặt lại mật khẩu',
+            'Nhập email tài khoản để nhận mã OTP đặt lại mật khẩu',
             style: AppTypography.bodySmall.copyWith(color: muted),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.s6),
 
-          if (_sent)
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.s4),
-              decoration: BoxDecoration(
-                color: AppColors.successSoft,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline, color: AppColors.success, size: 18),
-                  const SizedBox(width: AppSpacing.s2),
-                  Expanded(
-                    child: Text(
-                      'Đã gửi email khôi phục. Vui lòng kiểm tra hộp thư.',
-                      style: AppTypography.body.copyWith(color: AppColors.success),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else ...[
-            DgInput(
-              label: 'Email',
-              hint: 'ban@email.com',
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.mail_outline,
-              textInputAction: TextInputAction.done,
-            ),
-            const SizedBox(height: AppSpacing.s5),
-            DgButton.primary(
-              label: _loading ? 'Đang gửi...' : 'Gửi link khôi phục',
-              loading: _loading,
-              fullWidth: true,
-              onPressed: _loading ? null : _send,
-            ),
-          ],
+          DgInput(
+            label: 'Email',
+            hint: 'ban@email.com',
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.mail_outline,
+            textInputAction: TextInputAction.done,
+          ),
+          const SizedBox(height: AppSpacing.s5),
+          DgButton.primary(
+            label: 'Gửi mã OTP',
+            loading: _loading,
+            fullWidth: true,
+            onPressed: _loading ? null : _send,
+          ),
 
           const SizedBox(height: AppSpacing.s5),
           GestureDetector(

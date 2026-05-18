@@ -23,6 +23,18 @@ dependencies:
   # Local storage (theme, auth token)
   shared_preferences: ^2.3.0
 
+  # HTTP client cho gọi API
+  http: ^1.2.2
+
+  # Internationalization (date formatting)
+  intl: ^0.20.2
+
+  # Mở URL (trang tải xuống)
+  url_launcher: ^6.3.0
+
+  # File picker (để chọn file mã nguồn)
+  file_picker: ^8.1.2
+
   # Charts (Admin dashboard)
   fl_chart: ^0.68.0
 
@@ -35,6 +47,12 @@ dependencies:
   # Icons
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.2.4
+  image_picker: ^1.2.2
+  universal_html: ^2.3.0
+
+  # Lưu & chia sẻ file xuất (Markdown / PDF / Word) trên mobile
+  share_plus: ^10.0.0
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +65,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/img/
 
   fonts:
     - family: Inter
@@ -70,5 +89,6 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/app_icon.png" # Đường dẫn tới file ảnh của bạn
-  min_sdk_android: 21 # Cấu hình tùy chọn cho Android
+  remove_alpha_ios: true # Thêm dòng này vào
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
